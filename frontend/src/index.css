@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4361ee;
+  --color-primary-light: #eef0fd;
+  --color-primary-dark: #3451cc;
+
+  --color-sidebar-bg: #0d1421;
+  --color-sidebar-hover: #1a2540;
+  --color-sidebar-active: #1e2d4d;
+  --color-sidebar-text: #8892a4;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-border: rgba(255,255,255,0.06);
+
+  --color-content-bg: #f4f5f9;
+  --color-card-bg: #ffffff;
+  --color-border: #e8eaed;
+  
+  --color-text-primary: #1a1d2e;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+
+  --color-success: #10b981;
+  --color-success-light: #ecfdf5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-danger: #ef4444;
+  --color-danger-light: #fef2f2;
+  --color-info: #3b82f6;
+  --color-info-light: #eff6ff;
+  --color-purple: #8b5cf6;
+  --color-purple-light: #f5f3ff;
+  --color-orange: #f97316;
+  --color-orange-light: #fff7ed;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  html, body, #root {
+    @apply h-full antialiased font-sans text-text-primary bg-content-bg;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn { 
+  from { opacity: 0; transform: translateY(8px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}

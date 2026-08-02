@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================
+// UTILISATEURS (Authentification)
+// ===========================
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  role      Role     @default(ASSISTANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  professeur    Professeur?
+  assistant     Assistant?
+  notifications Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  PROFESSEUR
+  ASSISTANT
+}
+
+// ===========================
+// PROFESSEURS
+// ===========================
+model Professeur {
+  id         Int    @id @default(autoincrement())
+  userId     Int    @unique
+  nom        String @db.VarChar(100)
+  prenom     String @db.VarChar(100)
+  telephone  String? @db.VarChar(20)
+  departement String? @db.VarChar(100)
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seances Seance[]
+
+  @@map("professeurs")
+}
+
+// ===========================
+// ASSISTANTS
+// ===========================
+model Assistant {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  nom         String   @db.VarChar(100)
+  prenom      String   @db.VarChar(100)
+  telephone   String?  @db.VarChar(20)
+  formation   String?  @db.VarChar(150)
+  niveau      String?  @db.VarChar(20)   // M1, M2, etc.
+  inscription DateTime? @db.Date
+  statut      Statut   @default(ACTIF)
+  note        String?  @db.Text
+  heuresMax   Int      @default(120)
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matieres        AssistantMatiere[]
+  disponibilites  Disponibilite[]
+  affectations    Affectation[]
+
+  @@map("assistants")
+}
+
+enum Statut {
+  ACTIF
+  INACTIF
+  CONGE
+}
+
+// ===========================
+// MATIÈRES
+// ===========================
+model Matiere {
+  id          Int    @id @default(autoincrement())
+  code        String @unique @db.VarChar(20)  // ex: ALGO, BDD, POO
+  nom         String @db.VarChar(150)
+  description String? @db.Text
+  couleur     String? @db.VarChar(10)  // ex: #4361ee
+
+  assistants AssistantMatiere[]
+  seances    Seance[]
+
+  @@map("matieres")
+}
+
+// Table de jointure Assistants <-> Matières
+model AssistantMatiere {
+  assistantId Int
+  matiereId   Int
+
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  matiere   Matiere   @relation(fields: [matiereId], references: [id], onDelete: Cascade)
+
+  @@id([assistantId, matiereId])
+  @@map("assistant_matieres")
+}
+
+// ===========================
+// SÉANCES (de TP/TD)
+// ===========================
+model Seance {
+  id           Int      @id @default(autoincrement())
+  matiereId    Int
+  professeurId Int
+  groupe       String   @db.VarChar(50)   // ex: Groupe A2
+  date         DateTime @db.Date
+  heureDebut   String   @db.VarChar(5)    // ex: 08:00
+  heureFin     String   @db.VarChar(5)    // ex: 10:00
+  salle        String?  @db.VarChar(50)
+  type         TypeSeance @default(TP)
+  niveau       String?  @db.VarChar(50)   // ex: Niveau L2
+  statut       StatutSeance @default(PLANIFIEE)
+
+  matiere    Matiere    @relation(fields: [matiereId], references: [id])
+  professeur Professeur @relation(fields: [professeurId], references: [id])
+  affectation Affectation?
+
+  @@map("seances")
+}
+
+enum TypeSeance {
+  TP
+  TD
+}
+
+enum StatutSeance {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+// ===========================
+// DISPONIBILITÉS
+// ===========================
+model Disponibilite {
+  id          Int    @id @default(autoincrement())
+  assistantId Int
+  jourSemaine Int    // 0 = Dimanche, 1 = Lundi ... 6 = Samedi
+  heureDebut  String @db.VarChar(5)  // ex: 08:00
+  heureFin    String @db.VarChar(5)  // ex: 12:00
+  estDisponible Boolean @default(true)
+
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+
+  @@map("disponibilites")
+}
+
+// ===========================
+// AFFECTATIONS
+// ===========================
+model Affectation {
+  id          Int      @id @default(autoincrement())
+  seanceId    Int      @unique
+  assistantId Int
+  statut      StatutAffectation @default(EN_ATTENTE)
+  heuresCount Float    @default(2.0)  // Durée de la séance en heures
+  commentaire String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  seance    Seance    @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+  assistant Assistant @relation(fields: [assistantId], references: [id])
+
+  @@map("affectations")
+}
+
+enum StatutAffectation {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+  ANNULEE
+}
+
+// ===========================
+// NOTIFICATIONS
+// ===========================
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   @db.VarChar(50)
+  titre     String   @db.VarChar(150)
+  message   String   @db.Text
+  lien      String?  @db.VarChar(255)
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lu])
+  @@map("notifications")
+}
