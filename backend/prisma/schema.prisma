@@ -114,21 +114,23 @@ model AssistantMatiere {
 // SÉANCES (de TP/TD)
 // ===========================
 model Seance {
-  id           Int      @id @default(autoincrement())
-  matiereId    Int
-  professeurId Int
-  groupe       String   @db.VarChar(50)   // ex: Groupe A2
-  date         DateTime @db.Date
-  heureDebut   String   @db.VarChar(5)    // ex: 08:00
-  heureFin     String   @db.VarChar(5)    // ex: 10:00
-  salle        String?  @db.VarChar(50)
-  type         TypeSeance @default(TP)
-  niveau       String?  @db.VarChar(50)   // ex: Niveau L2
-  statut       StatutSeance @default(PLANIFIEE)
+  id                      Int            @id @default(autoincrement())
+  matiereId               Int
+  professeurId            Int
+  groupe                  String         @db.VarChar(50)   // ex: Groupe A2
+  date                    DateTime       @db.Date
+  heureDebut              String         @db.VarChar(5)    // ex: 08:00
+  heureFin                String         @db.VarChar(5)    // ex: 10:00
+  salle                   String?        @db.VarChar(50)
+  type                    TypeSeance     @default(TP)
+  niveau                  String?        @db.VarChar(50)   // ex: Niveau L2
+  statut                  StatutSeance   @default(PLANIFIEE)
+  nombreAssistantsRequis  Int            @default(1)
 
-  matiere    Matiere    @relation(fields: [matiereId], references: [id])
-  professeur Professeur @relation(fields: [professeurId], references: [id])
-  affectation Affectation?
+  matiere      Matiere                @relation(fields: [matiereId], references: [id])
+  professeur   Professeur             @relation(fields: [professeurId], references: [id])
+  affectations Affectation[]
+  historique   HistoriqueReservation[]
 
   @@map("seances")
 }
@@ -166,7 +168,7 @@ model Disponibilite {
 // ===========================
 model Affectation {
   id          Int      @id @default(autoincrement())
-  seanceId    Int      @unique
+  seanceId    Int
   assistantId Int
   statut      StatutAffectation @default(EN_ATTENTE)
   heuresCount Float    @default(2.0)  // Durée de la séance en heures
@@ -177,6 +179,7 @@ model Affectation {
   seance    Seance    @relation(fields: [seanceId], references: [id], onDelete: Cascade)
   assistant Assistant @relation(fields: [assistantId], references: [id])
 
+  @@unique([seanceId, assistantId])
   @@map("affectations")
 }
 
@@ -185,6 +188,26 @@ enum StatutAffectation {
   VALIDEE
   REFUSEE
   ANNULEE
+}
+
+// ===========================
+// HISTORIQUE DE RÉSERVATION
+// ===========================
+model HistoriqueReservation {
+  id            Int      @id @default(autoincrement())
+  seanceId      Int
+  assistantId   Int
+  affectationId Int?
+  action        String   @db.VarChar(50) // RESERVATION, ANNULATION, VALIDATION, REFUS, LIBERATION_ADMIN
+  dateAction    DateTime @default(now())
+  ancienStatut  String?  @db.VarChar(50)
+  nouveauStatut String?  @db.VarChar(50)
+  effectuePar   String?  @db.VarChar(100)
+  commentaire   String?  @db.Text
+
+  seance Seance @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+
+  @@map("historique_reservations")
 }
 
 // ===========================

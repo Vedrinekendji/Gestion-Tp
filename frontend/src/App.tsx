@@ -12,6 +12,8 @@ import AddAssistant from './pages/AddAssistant';
 import Professeurs from './pages/Professeurs';
 import Matieres from './pages/Matieres';
 import MesSeances from './pages/MesSeances';
+import PlanningDisponible from './pages/PlanningDisponible';
+import Planning from './pages/Planning';
 
 function ProtectedLayout() {
   const { user } = useAuth();
@@ -31,6 +33,7 @@ function ProtectedLayout() {
               <>
                 <Route path="/professeurs" element={<Professeurs />} />
                 <Route path="/matieres" element={<Matieres />} />
+                <Route path="/planning" element={<Planning />} />
               </>
             )}
             {user.role === 'professeur' && (
@@ -45,6 +48,7 @@ function ProtectedLayout() {
               <>
                 <Route path="/mes-disponibilites" element={<Disponibilites />} />
                 <Route path="/mes-seances" element={<MesSeances />} />
+                <Route path="/tps-disponibles" element={<PlanningDisponible />} />
               </>
             )}
             <Route path="/profil" element={<PlaceholderPage title="Mon profil" />} />

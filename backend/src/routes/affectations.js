@@ -51,18 +51,18 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { seanceId, assistantId } = req.body;
 
-    // Vérifier que la séance existe et n'est pas déjà affectée
+    // Vérifier que la séance existe et si des places restent
     const seance = await prisma.seance.findUnique({
       where: { id: parseInt(seanceId) },
-      include: { affectation: true },
+      include: { affectations: { where: { statut: { in: ['EN_ATTENTE', 'VALIDEE'] } } } },
     });
 
     if (!seance) {
       return res.status(404).json({ error: 'Séance introuvable.' });
     }
 
-    if (seance.affectation) {
-      return res.status(400).json({ error: 'Cette séance est déjà affectée.' });
+    if (seance.affectations.length >= (seance.nombreAssistantsRequis || 1)) {
+      return res.status(400).json({ error: 'Cette séance est déjà complète (toutes les places d\'assistant sont attribuées).' });
     }
 
     // Calculer la durée en heures

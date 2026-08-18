@@ -32,14 +32,55 @@ async function main() {
   });
   console.log('👑 Administrateur créé :', adminUser.email);
 
+  // ============================
+  // PROFESSEUR (de test)
+  // ============================
+  const hashProf = await bcrypt.hash('prof123', 10);
+  const profUser = await prisma.user.create({
+    data: {
+      email: 'prof@gestiontp.dz',
+      password: hashProf,
+      role: 'PROFESSEUR',
+      professeur: {
+        create: {
+          nom: 'Dupont',
+          prenom: 'Jean',
+          departement: 'Informatique'
+        }
+      }
+    }
+  });
+  console.log('🎓 Professeur créé :', profUser.email);
+
+  // ============================
+  // ASSISTANT (de test)
+  // ============================
+  const hashAssistant = await bcrypt.hash('assistant123', 10);
+  const assistantUser = await prisma.user.create({
+    data: {
+      email: 'assistant@gestiontp.dz',
+      password: hashAssistant,
+      role: 'ASSISTANT',
+      assistant: {
+        create: {
+          nom: 'Martin',
+          prenom: 'Paul',
+          formation: 'Génie Logiciel',
+          niveau: 'M1'
+        }
+      }
+    }
+  });
+  console.log('👨‍🎓 Assistant créé :', assistantUser.email);
+
   console.log('');
   console.log('🎉 Seeding terminé avec succès !');
   console.log('');
-  console.log('📝 Compte de connexion :');
-  console.log('   Admin : admin@gestiontp.dz / admin123');
+  console.log('📝 Comptes de connexion :');
+  console.log('   Admin     : admin@gestiontp.dz / admin123');
+  console.log('   Prof      : prof@gestiontp.dz / prof123');
+  console.log('   Assistant : assistant@gestiontp.dz / assistant123');
   console.log('');
-  console.log('ℹ️  Aucun professeur, assistant, matière ou séance de démo n\'a été créé.');
-  console.log('   Ajoute les vrais professeurs, matières et assistants via l\'application.');
 }
 
 main()
