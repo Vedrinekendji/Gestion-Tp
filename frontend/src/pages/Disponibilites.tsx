@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { FiStar, FiX, FiPlus } from 'react-icons/fi';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -231,7 +232,7 @@ export default function Disponibilites() {
                           <div className={`relative rounded-md py-2 px-2.5 min-h-[60px] text-[11.5px] ${cell.type === 'occupé' ? 'bg-red-50 border border-red-200' : cell.type === 'disponible' ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
                             {cell.matiere && (
                               <>
-                                <div className="text-text-primary text-[11px] mb-[3px]">★ <strong>{cell.matiere}</strong></div>
+                                <div className="text-text-primary text-[11px] mb-[3px] flex items-center gap-1"><FiStar className="text-amber-500" /> <strong>{cell.matiere}</strong></div>
                                 <div className="text-[10.5px] text-text-secondary">{cell.groupe}</div>
                                 <div className="text-[10.5px] text-text-secondary">{cell.salle}</div>
                                 <div className={`mt-1 text-[10px] font-bold ${cell.type === 'occupé' ? 'text-danger' : 'text-warning'}`}>
@@ -244,10 +245,10 @@ export default function Disponibilites() {
                             )}
                             {cell.type === 'disponible' && cell.dispoId && (
                               <button
-                                className="absolute top-1 right-1.5 bg-transparent border-none cursor-pointer text-[14px] text-text-muted leading-none p-0 hover:text-danger transition-colors"
+                                className="absolute top-1 right-1.5 bg-transparent border-none cursor-pointer text-[14px] text-text-muted leading-none p-0 hover:text-danger transition-colors flex items-center justify-center"
                                 onClick={() => handleDeleteDispo(cell.dispoId!)}
                               >
-                                ×
+                                <FiX />
                               </button>
                             )}
                           </div>
@@ -256,7 +257,7 @@ export default function Disponibilites() {
                             className="min-h-[60px] flex items-center justify-center text-border text-[18px] cursor-pointer rounded-md transition-all hover:bg-primary-light hover:text-primary"
                             onClick={() => handleAddDispo(jIdx, crIdx)}
                           >
-                            +
+                            <FiPlus />
                           </div>
                         )}
                       </td>

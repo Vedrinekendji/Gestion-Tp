@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { FiList, FiCalendar, FiCheckCircle, FiClock, FiMapPin, FiUsers, FiAlertTriangle, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -77,6 +82,37 @@ export default function MesSeances() {
     .filter(a => a.statut === 'VALIDEE')
     .reduce((sum, a) => sum + a.heuresCount, 0);
 
+  const calendarEvents = useMemo(() => {
+    return filtered.map(a => {
+      const statutMeta = STATUT_LABELS[a.statut] || STATUT_LABELS.EN_ATTENTE;
+      const dateStr = new Date(a.date).toISOString().split('T')[0];
+      return {
+        id: a.id.toString(),
+        title: `${a.matiereCode} - ${a.type} - G:${a.groupe}`,
+        start: `${dateStr}T${a.heureDebut}`,
+        end: `${dateStr}T${a.heureFin}`,
+        backgroundColor: statutMeta.bg,
+        borderColor: statutMeta.color,
+        textColor: statutMeta.color,
+        extendedProps: { ...a, statutMeta }
+      };
+    });
+  }, [filtered]);
+
+  const handleEventClick = (info: any) => {
+    const eventId = Number(info.event.id);
+    const affectation = filtered.find(a => a.id === eventId);
+    if (affectation) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isFuture = new Date(affectation.date) >= today;
+      const canCancel = isFuture && affectation.statut !== 'ANNULEE' && affectation.statut !== 'REFUSEE';
+      if (canCancel) {
+        setCancelModalItem(affectation);
+      }
+    }
+  };
+
   const handleCancelReservation = async () => {
     if (!cancelModalItem) return;
     setSubmitting(true);
@@ -131,14 +167,14 @@ export default function MesSeances() {
             className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all ${viewMode === 'list' ? 'bg-card-bg text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
               }`}
           >
-            📋 Liste
+            <FiList className="mr-1.5 inline -mt-0.5" /> Liste
           </button>
           <button
             onClick={() => setViewMode('calendar')}
             className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all ${viewMode === 'calendar' ? 'bg-card-bg text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
               }`}
           >
-            📅 Calendrier
+            <FiCalendar className="mr-1.5 inline -mt-0.5" /> Calendrier
           </button>
         </div>
       </div>
@@ -146,8 +182,8 @@ export default function MesSeances() {
       {feedback && (
         <div className={`p-3.5 rounded-xl text-[13px] font-medium flex items-center justify-between gap-2 shadow-sm ${feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
           }`}>
-          <span>{feedback.type === 'success' ? '✅' : '⚠️'} {feedback.message}</span>
-          <button onClick={() => setFeedback(null)} className="border-none bg-transparent cursor-pointer text-text-muted">✕</button>
+          <span className="flex items-center gap-1.5">{feedback.type === 'success' ? <FiCheckCircle /> : <FiAlertTriangle />} {feedback.message}</span>
+          <button onClick={() => setFeedback(null)} className="border-none bg-transparent cursor-pointer text-text-muted flex items-center justify-center"><FiX /></button>
         </div>
       )}
 
@@ -155,7 +191,7 @@ export default function MesSeances() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card-bg border border-border rounded-xl shadow-sm p-4 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl shrink-0">
-            ✅
+            <FiCheckCircle />
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{valideesCount}</div>
@@ -165,7 +201,7 @@ export default function MesSeances() {
 
         <div className="bg-card-bg border border-border rounded-xl shadow-sm p-4 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl shrink-0">
-            ⏳
+            <FiClock />
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{enAttenteCount}</div>
@@ -175,7 +211,7 @@ export default function MesSeances() {
 
         <div className="bg-card-bg border border-border rounded-xl shadow-sm p-4 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">
-            ⏱️
+            <FiClock />
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{heuresTotal}h</div>
@@ -204,64 +240,154 @@ export default function MesSeances() {
         ))}
       </div>
 
-      {/* List / Cards */}
-      <div className="flex flex-col gap-3">
-        {filtered.map(a => {
-          const statutMeta = STATUT_LABELS[a.statut] || STATUT_LABELS.EN_ATTENTE;
-          const isFuture = new Date(a.date) >= today;
-          const canCancel = isFuture && a.statut !== 'ANNULEE' && a.statut !== 'REFUSEE';
-
-          return (
-            <div key={a.id} className="bg-card-bg border border-border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-1.5 h-12 rounded-full shrink-0" style={{ background: a.matiereCouleur || '#4361ee' }}></div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[15px] font-bold text-text-primary">{a.matiere}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: (a.matiereCouleur || '#4361ee') + '20', color: a.matiereCouleur || '#4361ee' }}>
-                      {a.matiereCode}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-content-bg text-text-secondary">
-                      {a.type}
-                    </span>
-                  </div>
-                  <div className="text-[13px] text-text-secondary mt-1 flex items-center gap-3 flex-wrap">
-                    <span>📍 {a.salle || 'Salle non spécifiée'}</span>
-                    <span>👥 {a.groupe}</span>
-                    <span>⏱️ {a.heuresCount}h</span>
-                  </div>
-                  <div className="text-[12.5px] text-text-muted mt-0.5 font-medium">
-                    📅 {new Date(a.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} • ⏰ {a.heureDebut} – {a.heureFin}
+      {/* VIEW MODE: CALENDAR */}
+      {viewMode === 'calendar' && (
+        <div className="bg-card-bg border border-border rounded-xl shadow-sm p-4 overflow-hidden relative" style={{ minHeight: '600px' }}>
+          <style>{`
+            .fc {
+              --fc-border-color: rgba(0,0,0,0.08);
+              --fc-page-bg-color: transparent;
+              --fc-neutral-bg-color: rgba(0,0,0,0.02);
+            }
+            .dark .fc {
+              --fc-border-color: rgba(255,255,255,0.08);
+              --fc-neutral-bg-color: rgba(255,255,255,0.02);
+            }
+            .fc-theme-standard th, .fc-theme-standard td, .fc-theme-standard .fc-scrollgrid {
+              border-color: var(--fc-border-color);
+            }
+            .fc .fc-toolbar-title {
+              font-size: 1.25rem;
+              font-weight: 700;
+              color: var(--text-primary, inherit);
+            }
+            .fc .fc-button-primary {
+              background-color: #4361ee;
+              border-color: #4361ee;
+            }
+            .fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active {
+              background-color: #3b82f6;
+              border-color: #3b82f6;
+            }
+            .fc-event {
+              cursor: pointer;
+              transition: opacity 0.2s;
+              padding: 2px;
+              border-radius: 4px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .fc-event:hover {
+              opacity: 0.9;
+            }
+            .fc-timegrid-event-harness > .fc-timegrid-event {
+              z-index: 10 !important;
+            }
+            .fc-event-title {
+              font-weight: 700;
+              font-size: 0.8em;
+              white-space: normal;
+              line-height: 1.2;
+            }
+            .fc-event-time {
+              font-size: 0.75em;
+              opacity: 0.9;
+              margin-bottom: 2px;
+            }
+          `}</style>
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            }}
+            locale="fr"
+            slotMinTime="08:00:00"
+            slotMaxTime="20:00:00"
+            allDaySlot={false}
+            events={calendarEvents}
+            height="auto"
+            eventClick={handleEventClick}
+            firstDay={1}
+            eventContent={(eventInfo) => {
+              const { statutMeta } = eventInfo.event.extendedProps;
+              return (
+                <div className="flex flex-col h-full overflow-hidden p-1">
+                  <div className="fc-event-time">{eventInfo.timeText}</div>
+                  <div className="fc-event-title">{eventInfo.event.title}</div>
+                  <div className="mt-auto text-[10px] font-bold tracking-wider pt-1 uppercase">
+                    {statutMeta.label}
                   </div>
                 </div>
-              </div>
+              );
+            }}
+          />
+        </div>
+      )}
 
-              <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border">
-                <span className="px-3 py-1 rounded-full text-[12px] font-semibold flex items-center gap-1.5" style={{ background: statutMeta.bg, color: statutMeta.color }}>
-                  <span>●</span> {statutMeta.label}
-                </span>
+      {/* List / Cards */}
+      {viewMode === 'list' && (
+        <div className="flex flex-col gap-3">
+          {filtered.map(a => {
+            const statutMeta = STATUT_LABELS[a.statut] || STATUT_LABELS.EN_ATTENTE;
+            const isFuture = new Date(a.date) >= today;
+            const canCancel = isFuture && a.statut !== 'ANNULEE' && a.statut !== 'REFUSEE';
 
-                {canCancel && (
-                  <button
-                    onClick={() => setCancelModalItem(a)}
-                    className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-lg text-[12.5px] font-semibold border border-rose-500/20 cursor-pointer transition-colors"
-                  >
-                    Annuler
-                  </button>
-                )}
+            return (
+              <div key={a.id} className="bg-card-bg border border-border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-1.5 h-12 rounded-full shrink-0" style={{ background: a.matiereCouleur || '#4361ee' }}></div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[15px] font-bold text-text-primary">{a.matiere}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: (a.matiereCouleur || '#4361ee') + '20', color: a.matiereCouleur || '#4361ee' }}>
+                        {a.matiereCode}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-content-bg text-text-secondary">
+                        {a.type}
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-text-secondary mt-1 flex items-center gap-3 flex-wrap">
+                      <span className="flex items-center gap-1.5"><FiMapPin /> {a.salle || 'Salle non spécifiée'}</span>
+                      <span className="flex items-center gap-1.5"><FiUsers /> {a.groupe}</span>
+                      <span className="flex items-center gap-1.5"><FiClock /> {a.heuresCount}h</span>
+                    </div>
+                    <div className="text-[12.5px] text-text-muted mt-0.5 font-medium flex items-center gap-2 flex-wrap">
+                      <span className="flex items-center gap-1.5"><FiCalendar /> {new Date(a.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1.5"><FiClock /> {a.heureDebut} – {a.heureFin}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border">
+                  <span className="px-3 py-1 rounded-full text-[12px] font-semibold flex items-center gap-1.5" style={{ background: statutMeta.bg, color: statutMeta.color }}>
+                    <span>●</span> {statutMeta.label}
+                  </span>
+
+                  {canCancel && (
+                    <button
+                      onClick={() => setCancelModalItem(a)}
+                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-lg text-[12.5px] font-semibold border border-rose-500/20 cursor-pointer transition-colors"
+                    >
+                      Annuler
+                    </button>
+                  )}
+                </div>
               </div>
+            );
+          })}
+
+          {filtered.length === 0 && (
+            <div className="bg-card-bg border border-border rounded-xl py-12 flex flex-col items-center gap-2 text-center">
+              <FiCalendar className="text-4xl text-text-muted" />
+              <p className="text-[14px] text-text-secondary font-medium mt-2">Aucune séance dans cette vue.</p>
+              <p className="text-[12.5px] text-text-muted">Vous pouvez vous inscrire à de nouveaux TP depuis l'onglet "TPs Disponibles".</p>
             </div>
-          );
-        })}
-
-        {filtered.length === 0 && (
-          <div className="bg-card-bg border border-border rounded-xl py-12 flex flex-col items-center gap-2 text-center">
-            <span className="text-4xl">📅</span>
-            <p className="text-[14px] text-text-secondary font-medium mt-2">Aucune séance dans cette vue.</p>
-            <p className="text-[12.5px] text-text-muted">Vous pouvez vous inscrire à de nouveaux TP depuis l'onglet "TPs Disponibles".</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Cancel Confirmation Modal */}
       {cancelModalItem && (

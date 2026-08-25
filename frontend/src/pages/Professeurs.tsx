@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { FiMail, FiAlertTriangle } from 'react-icons/fi';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -110,7 +111,7 @@ export default function Professeurs() {
     return (
       <div className="flex items-center justify-center h-[60%]">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="text-[36px]">⚠️</div>
+          <FiAlertTriangle className="text-[36px] text-rose-500" />
           <p className="text-text-secondary">{error}</p>
           <button onClick={fetchProfesseurs} className="btn btn-primary px-4 py-2 text-[13px]">Réessayer</button>
         </div>
@@ -129,7 +130,7 @@ export default function Professeurs() {
           onClick={() => { setShowForm(true); setFormError(''); }}
           className="inline-flex items-center gap-2 py-2 px-4 bg-primary text-white border-none rounded-md text-[13.5px] font-medium shadow-[0_2px_8px_rgba(67,97,238,0.3)] transition-all hover:bg-primary-dark hover:-translate-y-[1px] cursor-pointer"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           Ajouter un professeur
         </button>
       </div>
@@ -154,7 +155,7 @@ export default function Professeurs() {
                       <div className="flex items-center justify-center rounded-full font-semibold text-[13px] shrink-0 w-9 h-9" style={{ background: getColor(p.id), color: '#fff' }}>{getInitials(p.nom)}</div>
                       <div>
                         <div className="text-[13.5px] font-semibold text-text-primary">{p.nom}</div>
-                        <div className="text-[11.5px] text-text-muted mt-0.5">✉ {p.email}</div>
+                        <div className="text-[11.5px] text-text-muted mt-0.5 flex items-center gap-1"><FiMail /> {p.email}</div>
                       </div>
                     </div>
                   </td>
@@ -163,7 +164,7 @@ export default function Professeurs() {
                   <td className="px-4 py-3.5 align-middle text-[13px] text-text-primary">{p.nbSeances}</td>
                   <td className="px-4 py-3.5 align-middle">
                     <button className="p-2 rounded-md bg-transparent border-none cursor-pointer text-danger transition-colors hover:bg-danger-light" title="Supprimer" onClick={() => handleDelete(p.id)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </button>
                   </td>
                 </tr>

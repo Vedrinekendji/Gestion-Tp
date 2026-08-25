@@ -5,13 +5,12 @@ import { createNotification, notifyAdmins } from '../lib/notify.js';
 
 const router = express.Router();
 
-// Toutes les routes assistants nécessitent d'être connecté
 router.use(authMiddleware);
 
 // =====================
 // GET /api/assistants
 // =====================
-router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.get('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
   try {
     const assistants = await prisma.assistant.findMany({
       include: {
@@ -20,8 +19,7 @@ router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
           include: { matiere: true },
         },
         affectations: {
-          where: { statut: { in: ['VALIDEE', 'EN_ATTENTE'] } },
-          select: { heuresCount: true, statut: true },
+          select: { heuresCount: true, statut: true, statutHeures: true },
         },
       },
       orderBy: { nom: 'asc' },
@@ -29,15 +27,17 @@ router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 
     const result = assistants.map(a => {
       const heuresValidees = a.affectations
-        .filter(af => af.statut === 'VALIDEE')
+        .filter(af => af.statutHeures === 'VALIDEE')
         .reduce((sum, af) => sum + af.heuresCount, 0);
       const heuresAttente = a.affectations
-        .filter(af => af.statut === 'EN_ATTENTE')
+        .filter(af => af.statutHeures === 'EN_ATTENTE' && af.statut === 'VALIDEE')
         .reduce((sum, af) => sum + af.heuresCount, 0);
 
       return {
         id: a.id,
         nom: `${a.prenom} ${a.nom}`,
+        prenom: a.prenom,
+        nomFamille: a.nom,
         email: a.user.email,
         telephone: a.telephone,
         formation: a.formation,
@@ -63,7 +63,7 @@ router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 // =====================
 // GET /api/assistants/:id
 // =====================
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
   try {
     const assistant = await prisma.assistant.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -86,9 +86,8 @@ router.get('/:id', async (req, res) => {
 
 // =====================
 // POST /api/assistants
-// Créer un nouvel assistant
 // =====================
-router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { nom, prenom, email, telephone, note, formation, niveau, matieres } = req.body;
 
@@ -96,17 +95,14 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
       return res.status(400).json({ error: 'Nom, prénom et email sont requis.' });
     }
 
-    // Vérifier que l'email n'existe pas déjà
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
     }
 
-    // Hash du mot de passe par défaut
     const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.default.hash('asst123', 10);
 
-    // Créer l'utilisateur + assistant en transaction
     const user = await prisma.user.create({
       data: {
         email,
@@ -129,9 +125,7 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
       include: { assistant: true },
     });
 
-    // Lier les matières si fournies
     if (matieres && matieres.length > 0) {
-      // Chercher les matières par code
       const matieresDb = await prisma.matiere.findMany({
         where: { code: { in: matieres } },
       });
@@ -145,26 +139,6 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
         });
       }
     }
-
-    const actor = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      include: { professeur: true },
-    });
-    const actorName = actor?.professeur ? `${actor.professeur.prenom} ${actor.professeur.nom}` : "l'administrateur";
-
-    await createNotification({
-      userId: user.id,
-      type: 'BIENVENUE',
-      titre: 'Bienvenue sur GestionTP',
-      message: `Votre compte assistant a été créé par ${actorName}. Vous pouvez dès à présent renseigner vos disponibilités.`,
-    });
-
-    await notifyAdmins({
-      excludeUserId: req.user.userId,
-      type: 'ASSISTANT_CREE',
-      titre: 'Nouvel assistant ajouté',
-      message: `${actorName} a ajouté un nouvel assistant : ${prenom} ${nom}.`,
-    });
 
     res.status(201).json({
       id: user.assistant.id,
@@ -180,9 +154,8 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 
 // =====================
 // PATCH /api/assistants/:id
-// Modifier un assistant
 // =====================
-router.patch('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.patch('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { statut, note, heuresMax } = req.body;
     const id = parseInt(req.params.id);
@@ -197,12 +170,7 @@ router.patch('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
       data: updateData,
     });
 
-    res.json({
-      id: assistant.id,
-      statut: assistant.statut,
-      note: assistant.note,
-      heuresMax: assistant.heuresMax,
-    });
+    res.json(assistant);
   } catch (error) {
     console.error('[ASSISTANTS/PATCH]', error);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
@@ -211,9 +179,8 @@ router.patch('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 
 // =====================
 // DELETE /api/assistants/:id
-// Supprimer un assistant
 // =====================
-router.delete('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.delete('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const assistant = await prisma.assistant.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -223,7 +190,6 @@ router.delete('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
       return res.status(404).json({ error: 'Assistant introuvable.' });
     }
 
-    // Supprimer l'utilisateur (cascade supprime l'assistant)
     await prisma.user.delete({
       where: { id: assistant.userId },
     });

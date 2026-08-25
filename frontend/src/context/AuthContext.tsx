@@ -2,11 +2,13 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+export type UserRole = 'admin' | 'responsable_pedagogique' | 'professeur' | 'assistant' | 'service_administratif';
+
 export interface User {
   id?: number;
   email: string;
   name: string;
-  role: 'admin' | 'professeur' | 'assistant';
+  role: UserRole;
   initials: string;
 }
 
@@ -21,12 +23,20 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('gestiontp_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('gestiontp_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('gestiontp_token');
+    try {
+      return localStorage.getItem('gestiontp_token');
+    } catch {
+      return null;
+    }
   });
 
   const login = async (email: string, password: string) => {
@@ -48,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       id: userData.id,
       email: userData.email,
       name: userData.name,
-      role: userData.role as 'admin' | 'professeur' | 'assistant',
+      role: userData.role as UserRole,
       initials: userData.initials,
     };
 

@@ -31,22 +31,24 @@ model User {
 
 enum Role {
   ADMIN
+  RESPONSABLE_PEDAGOGIQUE
   PROFESSEUR
   ASSISTANT
+  SERVICE_ADMINISTRATIF
 }
 
 // ===========================
-// PROFESSEURS
+// PROFESSEURS / RESPONSABLE PÉDAGOGIQUE
 // ===========================
 model Professeur {
-  id         Int    @id @default(autoincrement())
-  userId     Int    @unique
-  nom        String @db.VarChar(100)
-  prenom     String @db.VarChar(100)
-  telephone  String? @db.VarChar(20)
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  nom         String  @db.VarChar(100)
+  prenom      String  @db.VarChar(100)
+  telephone   String? @db.VarChar(20)
   departement String? @db.VarChar(100)
 
-  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   seances Seance[]
 
   @@map("professeurs")
@@ -56,22 +58,23 @@ model Professeur {
 // ASSISTANTS
 // ===========================
 model Assistant {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  nom         String   @db.VarChar(100)
-  prenom      String   @db.VarChar(100)
-  telephone   String?  @db.VarChar(20)
-  formation   String?  @db.VarChar(150)
-  niveau      String?  @db.VarChar(20)   // M1, M2, etc.
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  nom         String    @db.VarChar(100)
+  prenom      String    @db.VarChar(100)
+  telephone   String?   @db.VarChar(20)
+  formation   String?   @db.VarChar(150)
+  niveau      String?   @db.VarChar(20) // M1, M2, L3, etc.
   inscription DateTime? @db.Date
-  statut      Statut   @default(ACTIF)
-  note        String?  @db.Text
-  heuresMax   Int      @default(120)
+  statut      Statut    @default(ACTIF)
+  note        String?   @db.Text
+  heuresMax   Int       @default(120)
 
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matieres        AssistantMatiere[]
-  disponibilites  Disponibilite[]
-  affectations    Affectation[]
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matieres       AssistantMatiere[]
+  disponibilites Disponibilite[]
+  affectations   Affectation[]
+  candidature    Candidature?
 
   @@map("assistants")
 }
@@ -83,14 +86,45 @@ enum Statut {
 }
 
 // ===========================
+// CANDIDATURES ASSISTANTS
+// ===========================
+model Candidature {
+  id             Int               @id @default(autoincrement())
+  nom            String            @db.VarChar(100)
+  prenom         String            @db.VarChar(100)
+  email          String            @db.VarChar(255)
+  telephone      String?           @db.VarChar(20)
+  formation      String            @db.VarChar(150)
+  niveau         String            @db.VarChar(20)
+  disponibilites String?           @db.Text
+  cvUrl          String?           @db.VarChar(255)
+  statut         StatutCandidature @default(EN_ATTENTE)
+  commentaire    String?           @db.Text
+  motifRefus     String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  assistantId Int?       @unique
+  assistant   Assistant? @relation(fields: [assistantId], references: [id], onDelete: SetNull)
+
+  @@map("candidatures")
+}
+
+enum StatutCandidature {
+  EN_ATTENTE
+  ACCEPTEE
+  REFUSEE
+}
+
+// ===========================
 // MATIÈRES
 // ===========================
 model Matiere {
-  id          Int    @id @default(autoincrement())
-  code        String @unique @db.VarChar(20)  // ex: ALGO, BDD, POO
-  nom         String @db.VarChar(150)
+  id          Int     @id @default(autoincrement())
+  code        String  @unique @db.VarChar(20) // ex: ALGO, BDD, POO
+  nom         String  @db.VarChar(150)
   description String? @db.Text
-  couleur     String? @db.VarChar(10)  // ex: #4361ee
+  couleur     String? @db.VarChar(10) // ex: #4361ee
 
   assistants AssistantMatiere[]
   seances    Seance[]
@@ -114,21 +148,21 @@ model AssistantMatiere {
 // SÉANCES (de TP/TD)
 // ===========================
 model Seance {
-  id                      Int            @id @default(autoincrement())
-  matiereId               Int
-  professeurId            Int
-  groupe                  String         @db.VarChar(50)   // ex: Groupe A2
-  date                    DateTime       @db.Date
-  heureDebut              String         @db.VarChar(5)    // ex: 08:00
-  heureFin                String         @db.VarChar(5)    // ex: 10:00
-  salle                   String?        @db.VarChar(50)
-  type                    TypeSeance     @default(TP)
-  niveau                  String?        @db.VarChar(50)   // ex: Niveau L2
-  statut                  StatutSeance   @default(PLANIFIEE)
-  nombreAssistantsRequis  Int            @default(1)
+  id                     Int          @id @default(autoincrement())
+  matiereId              Int
+  professeurId           Int
+  groupe                 String       @db.VarChar(50) // ex: Groupe A2
+  date                   DateTime     @db.Date
+  heureDebut             String       @db.VarChar(5) // ex: 08:00
+  heureFin               String       @db.VarChar(5) // ex: 10:00
+  salle                  String?      @db.VarChar(50)
+  type                   TypeSeance   @default(TP)
+  niveau                 String?      @db.VarChar(50) // ex: Niveau L2
+  statut                 StatutSeance @default(PLANIFIEE)
+  nombreAssistantsRequis Int          @default(1)
 
-  matiere      Matiere                @relation(fields: [matiereId], references: [id])
-  professeur   Professeur             @relation(fields: [professeurId], references: [id])
+  matiere      Matiere                 @relation(fields: [matiereId], references: [id])
+  professeur   Professeur              @relation(fields: [professeurId], references: [id])
   affectations Affectation[]
   historique   HistoriqueReservation[]
 
@@ -151,11 +185,11 @@ enum StatutSeance {
 // DISPONIBILITÉS
 // ===========================
 model Disponibilite {
-  id          Int    @id @default(autoincrement())
-  assistantId Int
-  jourSemaine Int    // 0 = Dimanche, 1 = Lundi ... 6 = Samedi
-  heureDebut  String @db.VarChar(5)  // ex: 08:00
-  heureFin    String @db.VarChar(5)  // ex: 12:00
+  id            Int     @id @default(autoincrement())
+  assistantId   Int
+  jourSemaine   Int // 0 = Dimanche, 1 = Lundi ... 6 = Samedi
+  heureDebut    String  @db.VarChar(5) // ex: 08:00
+  heureFin      String  @db.VarChar(5) // ex: 12:00
   estDisponible Boolean @default(true)
 
   assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
@@ -167,17 +201,20 @@ model Disponibilite {
 // AFFECTATIONS
 // ===========================
 model Affectation {
-  id          Int      @id @default(autoincrement())
-  seanceId    Int
-  assistantId Int
-  statut      StatutAffectation @default(EN_ATTENTE)
-  heuresCount Float    @default(2.0)  // Durée de la séance en heures
-  commentaire String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   Int               @id @default(autoincrement())
+  seanceId             Int
+  assistantId          Int
+  statut               StatutAffectation @default(EN_ATTENTE)
+  heuresCount          Float             @default(2.0) // Durée de la séance en heures
+  commentaire          String?           @db.Text
+  statutHeures         StatutHeures      @default(EN_ATTENTE)
+  commentaireHeures    String?           @db.Text
+  dateValidationHeures DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   seance    Seance    @relation(fields: [seanceId], references: [id], onDelete: Cascade)
-  assistant Assistant @relation(fields: [assistantId], references: [id])
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
 
   @@unique([seanceId, assistantId])
   @@map("affectations")
@@ -188,6 +225,12 @@ enum StatutAffectation {
   VALIDEE
   REFUSEE
   ANNULEE
+}
+
+enum StatutHeures {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
 }
 
 // ===========================
@@ -211,6 +254,20 @@ model HistoriqueReservation {
 }
 
 // ===========================
+// HISTORIQUE PÉDAGOGIQUE GENERAL
+// ===========================
+model HistoriquePeda {
+  id          Int      @id @default(autoincrement())
+  utilisateur String   @db.VarChar(150)
+  action      String   @db.VarChar(100)
+  objet       String   @db.VarChar(150)
+  details     String?  @db.Text
+  date        DateTime @default(now())
+
+  @@map("historique_pedagogique")
+}
+
+// ===========================
 // NOTIFICATIONS
 // ===========================
 model Notification {
@@ -227,4 +284,62 @@ model Notification {
 
   @@index([userId, lu])
   @@map("notifications")
+}
+
+// ===========================
+// CONFIGURATION DU SYSTÈME
+// ===========================
+model SystemConfig {
+  id                      Int     @id @default(1)
+  blocageCreneauEnAttente Boolean @default(false)
+
+  @@map("system_config")
+}
+
+// ===========================
+// IMPORT EXCEL (BRUT)
+// ===========================
+model PlanningImport {
+  id          Int      @id @default(autoincrement())
+  filename    String   @db.VarChar(255)
+  importDate  DateTime @default(now())
+  importedBy  String?  @db.VarChar(100) // userId/nom
+  status      String   @default("EN_ATTENTE") // EN_ATTENTE, DOC_ANALYSE, DONNEES_IMPORTEES, TERMINE, ERREUR
+  totalSheets Int      @default(0)
+  totalRows   Int      @default(0)
+  totalCells  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  columns PlanningImportColumn[]
+  rawData PlanningRawData[]
+
+  @@map("planning_imports")
+}
+
+model PlanningImportColumn {
+  id          Int    @id @default(autoincrement())
+  importId    Int
+  sheetName   String @db.VarChar(255)
+  columnName  String @db.VarChar(255)
+  columnIndex Int
+
+  import PlanningImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@index([importId, sheetName])
+  @@map("planning_import_columns")
+}
+
+model PlanningRawData {
+  id        Int      @id @default(autoincrement())
+  importId  Int
+  sheetName String   @db.VarChar(255)
+  rowNumber Int
+  dataJson  Json
+  createdAt DateTime @default(now())
+
+  import PlanningImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  // Utile pour retrouver facilement les lignes d'une feuille d'un import
+  @@index([importId, sheetName])
+  @@map("planning_raw_data")
 }

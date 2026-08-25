@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiMessageSquare, FiUser, FiPaperclip, FiBell, FiBellOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const POLL_INTERVAL = 30000;
 
@@ -15,11 +15,11 @@ interface NotificationData {
   createdAt: string;
 }
 
-const TYPE_ICONS: Record<string, { icon: string; bg: string; color: string }> = {
-  BIENVENUE: { icon: '👋', bg: '#eef0fd', color: '#4361ee' },
-  ASSISTANT_CREE: { icon: '👤', bg: '#ecfdf5', color: '#10b981' },
-  AFFECTATION_CREEE: { icon: '📌', bg: '#eef0fd', color: '#4361ee' },
-  AFFECTATION_STATUT: { icon: '🔔', bg: '#fffbeb', color: '#f59e0b' },
+const TYPE_ICONS: Record<string, { icon: React.ReactNode; bg: string; color: string }> = {
+  BIENVENUE: { icon: <FiMessageSquare />, bg: '#eef0fd', color: '#4361ee' },
+  ASSISTANT_CREE: { icon: <FiUser />, bg: '#ecfdf5', color: '#10b981' },
+  AFFECTATION_CREEE: { icon: <FiPaperclip />, bg: '#eef0fd', color: '#4361ee' },
+  AFFECTATION_STATUT: { icon: <FiBell />, bg: '#fffbeb', color: '#f59e0b' },
 };
 
 function timeAgo(dateStr: string): string {
@@ -117,8 +117,8 @@ export default function NotificationBell() {
         className="relative w-9 h-9 bg-content-bg border border-border rounded-full flex items-center justify-center cursor-pointer text-text-secondary transition-colors hover:bg-border hover:text-text-primary"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-danger rounded-full border-[1.5px] border-white text-white text-[9px] font-bold flex items-center justify-center leading-none">
@@ -145,12 +145,12 @@ export default function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-10 flex flex-col items-center gap-2 text-center px-4">
-                <span className="text-[28px]">🔕</span>
+                <FiBellOff className="text-[28px] text-text-muted" />
                 <p className="text-[13px] text-text-muted">Aucune notification pour le moment.</p>
               </div>
             ) : (
               notifications.map(n => {
-                const meta = TYPE_ICONS[n.type] || { icon: '🔔', bg: '#f4f5f9', color: '#6b7280' };
+                const meta = TYPE_ICONS[n.type] || { icon: <FiBell />, bg: '#f4f5f9', color: '#6b7280' };
                 return (
                   <button
                     key={n.id}

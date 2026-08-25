@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { FiDownload, FiCheckCircle, FiAlertTriangle, FiCalendar, FiUser, FiSearch, FiList, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -206,7 +207,7 @@ export default function Planning() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'import.');
 
-            setFeedback({ message: `🎉 ${data.message}`, type: 'success' });
+            setFeedback({ message: `${data.message}`, type: 'success' });
             setShowImportModal(false);
             setCsvText('');
             await fetchSeances();
@@ -269,13 +270,13 @@ export default function Planning() {
                         }}
                         className="px-3.5 py-2 bg-content-bg hover:bg-border text-text-primary rounded-xl text-[13px] font-semibold border border-border cursor-pointer transition-colors flex items-center gap-1.5"
                     >
-                        📜 Historique Audit
+                        <FiList className="text-[15px]" /> Historique Audit
                     </button>
                     <button
                         onClick={() => setShowImportModal(true)}
                         className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-[13px] font-semibold border-none cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
                     >
-                        📥 Importer Planning (CSV/Excel)
+                        <FiDownload className="text-[15px]" /> Importer Planning (CSV/Excel)
                     </button>
                 </div>
             </div>
@@ -283,8 +284,8 @@ export default function Planning() {
             {feedback && (
                 <div className={`p-4 rounded-xl text-[13.5px] font-medium flex items-center justify-between gap-2 shadow-sm ${feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
                     }`}>
-                    <span>{feedback.type === 'success' ? '✅' : '⚠️'} {feedback.message}</span>
-                    <button onClick={() => setFeedback(null)} className="border-none bg-transparent cursor-pointer text-text-muted">✕</button>
+                    <span className="flex items-center gap-1.5">{feedback.type === 'success' ? <FiCheckCircle /> : <FiAlertTriangle />} {feedback.message}</span>
+                    <button onClick={() => setFeedback(null)} className="border-none bg-transparent cursor-pointer text-text-muted flex items-center justify-center"><FiX /></button>
                 </div>
             )}
 
@@ -355,7 +356,7 @@ export default function Planning() {
 
             {error ? (
                 <div className="bg-card-bg border border-border rounded-xl py-10 flex flex-col items-center gap-3 text-center">
-                    <div className="text-4xl">⚠️</div>
+                    <FiAlertTriangle className="text-4xl text-rose-500" />
                     <p className="text-text-secondary">{error}</p>
                     <button onClick={fetchSeances} className="bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-medium border-none cursor-pointer">Réessayer</button>
                 </div>
@@ -369,7 +370,7 @@ export default function Planning() {
                         return (
                             <div key={day} className="flex flex-col gap-3">
                                 <div className="flex items-center gap-3 border-b border-border/60 pb-2">
-                                    <span className="text-[14px] font-bold text-text-primary capitalize">📆 {label}</span>
+                                    <span className="text-[14px] font-bold text-text-primary capitalize flex items-center gap-1.5"><FiCalendar className="text-primary" /> {label}</span>
                                     <span className="text-[11px] text-text-muted bg-content-bg border border-border rounded-full px-2 py-0.5 font-medium">
                                         {daySeances.length} séance{daySeances.length > 1 ? 's' : ''}
                                     </span>
@@ -427,13 +428,13 @@ export default function Planning() {
                                                         <div className="flex flex-col gap-1">
                                                             {s.affectations.map(af => (
                                                                 <div key={af.id} className="flex items-center gap-2 bg-content-bg px-2.5 py-1 rounded-lg border border-border text-[12px]">
-                                                                    <span className="font-medium text-text-primary">👤 {af.nom}</span>
+                                                                    <span className="font-medium text-text-primary flex items-center gap-1"><FiUser className="text-text-muted" /> {af.nom}</span>
                                                                     <button
                                                                         onClick={() => handleLibererAssistant(s.id, af.assistantId)}
                                                                         title="Libérer la place cet assistant"
-                                                                        className="text-rose-600 hover:text-rose-700 bg-transparent border-none cursor-pointer font-bold ml-1 text-[13px]"
+                                                                        className="text-rose-600 hover:text-rose-700 bg-transparent border-none cursor-pointer font-bold ml-1 text-[13px] inline-flex items-center"
                                                                     >
-                                                                        ✕
+                                                                        <FiX />
                                                                     </button>
                                                                 </div>
                                                             ))}
@@ -450,7 +451,7 @@ export default function Planning() {
 
                     {sortedDays.length === 0 && (
                         <div className="bg-card-bg border border-border rounded-xl py-12 flex flex-col items-center gap-2 text-center">
-                            <span className="text-4xl">🔍</span>
+                            <FiSearch className="text-4xl text-text-muted" />
                             <p className="text-[14px] text-text-muted">Aucune séance ne correspond aux critères sélectionnés.</p>
                         </div>
                     )}
@@ -463,9 +464,9 @@ export default function Planning() {
                     <div className="bg-card-bg border border-border rounded-2xl p-6 max-w-2xl w-full shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-border pb-3">
                             <h3 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
-                                📥 Importer le Planning TP (CSV / Copier-Coller Excel)
+                                <FiDownload className="text-primary" /> Importer le Planning TP (CSV / Copier-Coller Excel)
                             </h3>
-                            <button onClick={() => setShowImportModal(false)} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer text-lg">✕</button>
+                            <button onClick={() => setShowImportModal(false)} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer text-lg flex items-center justify-center"><FiX /></button>
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -511,9 +512,9 @@ export default function Planning() {
                     <div className="bg-card-bg border border-border rounded-2xl p-6 max-w-4xl w-full shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-border pb-3">
                             <h3 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
-                                📜 Historique des Actions & Réservations (Audit Trail)
+                                <FiList className="text-primary" /> Historique des Actions & Réservations (Audit Trail)
                             </h3>
-                            <button onClick={() => setShowHistoryModal(false)} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer text-lg">✕</button>
+                            <button onClick={() => setShowHistoryModal(false)} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer text-lg flex items-center justify-center"><FiX /></button>
                         </div>
 
                         {loadingHistory ? (

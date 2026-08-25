@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { FiCalendar, FiList, FiCheckCircle, FiAlertTriangle, FiSearch, FiInfo, FiCheck, FiXCircle, FiClock, FiMapPin, FiUsers, FiUser, FiX, FiCheckSquare } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -42,7 +47,7 @@ export default function PlanningDisponible() {
 
     // Modal State
     const [selectedSeanceModal, setSelectedSeanceModal] = useState<SeanceDisponible | null>(null);
-    const [modalActionType, setModalActionType] = useState<'reserve' | 'cancel' | null>(null);
+    const [modalActionType, setModalActionType] = useState<'reserve' | 'cancel' | 'info' | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchDisponibles = async () => {
@@ -104,7 +109,7 @@ export default function PlanningDisponible() {
                 throw new Error(data.error || 'Erreur lors de la réservation.');
             }
 
-            setFeedback({ message: '🎉 Créneau réservé avec succès ! (En attente de confirmation/validation)', type: 'success' });
+            setFeedback({ message: 'Créneau réservé avec succès ! (En attente de confirmation/validation)', type: 'success' });
             setSelectedSeanceModal(null);
             setModalActionType(null);
             await fetchDisponibles();
@@ -146,16 +151,50 @@ export default function PlanningDisponible() {
         }
     };
 
-    // Grouping by Date for Calendar / Timeline view
-    const datesGrouped = useMemo(() => {
-        const groups: { [dateStr: string]: SeanceDisponible[] } = {};
-        filteredSeances.forEach(s => {
-            const dKey = new Date(s.date).toISOString().split('T')[0];
-            if (!groups[dKey]) groups[dKey] = [];
-            groups[dKey].push(s);
+    // Map to Calendar Events
+    const calendarEvents = useMemo(() => {
+        return filteredSeances.map(s => {
+            const isReservedByMe = s.statutCalcul === 'RESERVED_BY_ME';
+            const isFull = s.statutCalcul === 'FULL';
+            const isCancelled = s.statutCalcul === 'CANCELLED';
+            const isAvailable = s.statutCalcul === 'AVAILABLE';
+
+            let bgColor = '#4361ee';
+            if (isReservedByMe) bgColor = '#10b981'; // emerald
+            else if (isCancelled) bgColor = '#ef4444'; // rose
+            else if (isFull) bgColor = '#64748b'; // slate
+            else if (s.matiereCouleur) bgColor = s.matiereCouleur;
+
+            // Generate event datetime
+            const dateStr = new Date(s.date).toISOString().split('T')[0];
+
+            return {
+                id: s.id.toString(),
+                title: `${s.matiereCode} - ${s.type} - G:${s.groupe}`,
+                start: `${dateStr}T${s.heureDebut}`,
+                end: `${dateStr}T${s.heureFin}`,
+                backgroundColor: bgColor,
+                borderColor: bgColor,
+                textColor: '#ffffff',
+                extendedProps: { ...s, isReservedByMe, isFull, isCancelled, isAvailable }
+            };
         });
-        return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
     }, [filteredSeances]);
+
+    const handleEventClick = (info: any) => {
+        const eventId = Number(info.event.id);
+        const seance = filteredSeances.find(s => s.id === eventId);
+        if (seance) {
+            setSelectedSeanceModal(seance);
+            if (seance.statutCalcul === 'RESERVED_BY_ME') {
+                setModalActionType('cancel');
+            } else if (seance.statutCalcul === 'AVAILABLE') {
+                setModalActionType('reserve');
+            } else {
+                setModalActionType('info');
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -174,7 +213,7 @@ export default function PlanningDisponible() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card-bg border border-border p-5 rounded-2xl shadow-sm">
                 <div>
                     <h2 className="text-[24px] font-bold text-text-primary tracking-tight flex items-center gap-2">
-                        <span>📅</span> Réservation des Créneaux TP
+                        <FiCalendar className="text-primary" /> Réservation des Créneaux TP
                     </h2>
                     <p className="text-[13.5px] text-text-secondary mt-1">
                         Sélectionnez les séances de TP attribuées par le planning pour prendre en charge vos créneaux.
@@ -189,14 +228,14 @@ export default function PlanningDisponible() {
                             className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer border-none flex items-center gap-1.5 ${viewMode === 'calendar' ? 'bg-card-bg text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
                                 }`}
                         >
-                            📅 Vue Planning
+                            <FiCalendar className="text-[15px]" /> Vue Planning
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
                             className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer border-none flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-card-bg text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
                                 }`}
                         >
-                            📋 Vue Liste
+                            <FiList className="text-[15px]" /> Vue Liste
                         </button>
                     </div>
                 </div>
@@ -207,10 +246,10 @@ export default function PlanningDisponible() {
                 <div className={`p-4 rounded-xl text-[13.5px] font-medium flex items-center justify-between gap-3 shadow-sm animate-fade-in ${feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
                     }`}>
                     <div className="flex items-center gap-2">
-                        <span>{feedback.type === 'success' ? '✅' : '⚠️'}</span>
+                        {feedback.type === 'success' ? <FiCheckCircle className="text-lg" /> : <FiAlertTriangle className="text-lg" />}
                         <span>{feedback.message}</span>
                     </div>
-                    <button onClick={() => setFeedback(null)} className="text-[12px] opacity-70 hover:opacity-100 border-none bg-transparent cursor-pointer">✕</button>
+                    <button onClick={() => setFeedback(null)} className="text-[12px] opacity-70 hover:opacity-100 border-none bg-transparent cursor-pointer flex items-center justify-center"><FiX /></button>
                 </div>
             )}
 
@@ -219,7 +258,7 @@ export default function PlanningDisponible() {
                 <div className="flex items-center gap-3 w-full md:w-auto flex-1 flex-wrap">
                     {/* Search Box */}
                     <div className="relative flex-1 min-w-[220px]">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[14px]">🔍</span>
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[14px]" />
                         <input
                             type="text"
                             placeholder="Rechercher matière, prof, salle, groupe..."
@@ -249,7 +288,8 @@ export default function PlanningDisponible() {
                             onChange={e => setOnlyAvailable(e.target.checked)}
                             className="rounded text-primary focus:ring-primary accent-primary cursor-pointer"
                         />
-                        🟢 Créneaux libres uniquement
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
+                        Créneaux libres uniquement
                     </label>
                 </div>
 
@@ -260,7 +300,7 @@ export default function PlanningDisponible() {
 
             {error && (
                 <div className="bg-card-bg border border-border rounded-xl p-8 flex flex-col items-center text-center gap-3">
-                    <div className="text-4xl">⚠️</div>
+                    <FiAlertTriangle className="text-4xl text-rose-500 mb-2" />
                     <p className="text-text-secondary">{error}</p>
                     <button onClick={fetchDisponibles} className="px-4 py-2 bg-primary text-white text-[13px] font-medium rounded-lg hover:bg-primary-hover transition-colors border-none cursor-pointer">
                         Réessayer
@@ -270,157 +310,95 @@ export default function PlanningDisponible() {
 
             {/* VIEW MODE: CALENDAR / TIMELINE */}
             {!error && viewMode === 'calendar' && (
-                <div className="flex flex-col gap-6">
-                    {datesGrouped.length === 0 ? (
-                        <div className="bg-card-bg border border-border rounded-2xl p-12 text-center flex flex-col items-center gap-3">
-                            <span className="text-4xl">🔍</span>
-                            <h3 className="text-[16px] font-semibold text-text-primary">Aucun créneau correspondant</h3>
-                            <p className="text-[13px] text-text-muted max-w-md">Essayer de modifier vos filtres ou la recherche pour afficher d'autres séances.</p>
-                        </div>
-                    ) : (
-                        datesGrouped.map(([dateStr, items]) => {
-                            const dateObj = new Date(dateStr);
-                            const formattedDate = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-
+                <div className="bg-card-bg border border-border rounded-xl shadow-sm p-4 overflow-hidden relative" style={{ minHeight: '600px' }}>
+                    <style>{`
+                        .fc {
+                            --fc-border-color: rgba(0,0,0,0.08);
+                            --fc-page-bg-color: transparent;
+                            --fc-neutral-bg-color: rgba(0,0,0,0.02);
+                        }
+                        .dark .fc {
+                            --fc-border-color: rgba(255,255,255,0.08);
+                            --fc-neutral-bg-color: rgba(255,255,255,0.02);
+                        }
+                        .fc-theme-standard th, .fc-theme-standard td, .fc-theme-standard .fc-scrollgrid {
+                            border-color: var(--fc-border-color);
+                        }
+                        .fc .fc-toolbar-title {
+                            font-size: 1.25rem;
+                            font-weight: 700;
+                            color: var(--text-primary, inherit);
+                        }
+                        .fc .fc-button-primary {
+                            background-color: #4361ee;
+                            border-color: #4361ee;
+                        }
+                        .fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active {
+                            background-color: #3b82f6;
+                            border-color: #3b82f6;
+                        }
+                        .fc-event {
+                            cursor: pointer;
+                            transition: opacity 0.2s;
+                            padding: 2px;
+                            border-radius: 4px;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        }
+                        .fc-event:hover {
+                            opacity: 0.9;
+                        }
+                        .fc-timegrid-event-harness > .fc-timegrid-event {
+                            z-index: 10 !important;
+                        }
+                        .fc-event-title {
+                            font-weight: 700;
+                            font-size: 0.8em;
+                            white-space: normal;
+                            line-height: 1.2;
+                        }
+                        .fc-event-time {
+                            font-size: 0.75em;
+                            opacity: 0.9;
+                            margin-bottom: 2px;
+                        }
+                    `}</style>
+                    <FullCalendar
+                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                        initialView="timeGridWeek"
+                        headerToolbar={{
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                        }}
+                        locale="fr"
+                        slotMinTime="08:00:00"
+                        slotMaxTime="20:00:00"
+                        allDaySlot={false}
+                        events={calendarEvents}
+                        height="auto"
+                        eventClick={handleEventClick}
+                        firstDay={1}
+                        eventContent={(eventInfo) => {
+                            const { isReservedByMe, isAvailable, placesRestantes, nombreAssistantsRequis, isCancelled } = eventInfo.event.extendedProps;
                             return (
-                                <div key={dateStr} className="flex flex-col gap-3">
-                                    {/* Date Sticky Banner */}
-                                    <div className="flex items-center gap-3 border-b border-border/60 pb-2">
-                                        <span className="px-3 py-1 bg-primary/10 text-primary rounded-lg font-bold text-[13px] capitalize">
-                                            📆 {formattedDate}
-                                        </span>
-                                        <span className="text-[12px] text-text-muted font-medium">({items.length} créneau{items.length > 1 ? 'x' : ''})</span>
-                                    </div>
-
-                                    {/* Grid of Slots for this Date */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {items.map(s => {
-                                            const isReservedByMe = s.statutCalcul === 'RESERVED_BY_ME';
-                                            const isFull = s.statutCalcul === 'FULL';
-                                            const isCancelled = s.statutCalcul === 'CANCELLED';
-                                            const isAvailable = s.statutCalcul === 'AVAILABLE';
-
-                                            return (
-                                                <div
-                                                    key={s.id}
-                                                    className={`bg-card-bg border rounded-xl p-4 flex flex-col justify-between gap-4 transition-all hover:shadow-md relative overflow-hidden ${isReservedByMe
-                                                            ? 'border-emerald-500/40 bg-emerald-500/[0.02]'
-                                                            : isAvailable
-                                                                ? 'border-border hover:border-primary/50'
-                                                                : 'border-border opacity-85'
-                                                        }`}
-                                                >
-                                                    {/* Color bar top */}
-                                                    <div className="absolute top-0 left-0 right-0 h-1" style={{ background: s.matiereCouleur || '#4361ee' }}></div>
-
-                                                    {/* Card Content */}
-                                                    <div className="flex flex-col gap-2 mt-1">
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div>
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mb-1" style={{ background: (s.matiereCouleur || '#4361ee') + '20', color: s.matiereCouleur || '#4361ee' }}>
-                                                                    {s.matiereCode}
-                                                                </span>
-                                                                <h4 className="text-[15px] font-bold text-text-primary leading-snug">{s.matiere}</h4>
-                                                            </div>
-
-                                                            {/* Capacity / Status Badge */}
-                                                            {isCancelled ? (
-                                                                <span className="px-2 py-1 bg-rose-500/10 text-rose-600 rounded text-[11px] font-semibold border border-rose-500/20 shrink-0">
-                                                                    Annulé
-                                                                </span>
-                                                            ) : isReservedByMe ? (
-                                                                <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                                    ✓ Réservé (Vous)
-                                                                </span>
-                                                            ) : isFull ? (
-                                                                <span className="px-2.5 py-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 rounded text-[11px] font-semibold border border-slate-500/20 shrink-0">
-                                                                    Complet (0/{s.nombreAssistantsRequis})
-                                                                </span>
-                                                            ) : (
-                                                                <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold border border-emerald-500/20 shrink-0">
-                                                                    🟢 {s.placesRestantes}/{s.nombreAssistantsRequis} libre{s.placesRestantes > 1 ? 's' : ''}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Details */}
-                                                        <div className="text-[12.5px] text-text-secondary flex flex-col gap-1 mt-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-semibold text-text-primary">⏰ {s.heureDebut} – {s.heureFin}</span>
-                                                                <span className="text-text-muted">•</span>
-                                                                <span>📍 {s.salle || 'Salle non spécifiée'}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-text-muted">
-                                                                <span>👥 {s.groupe}</span>
-                                                                <span>•</span>
-                                                                <span>👨‍🏫 {s.professeur}</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Reserved Assistants list preview if multi */}
-                                                        {s.assistants.length > 0 && (
-                                                            <div className="mt-1 pt-2 border-t border-border/50 text-[11.5px] text-text-muted flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-medium">Assistants inscrits:</span>
-                                                                {s.assistants.map(a => (
-                                                                    <span key={a.id} className="bg-content-bg px-2 py-0.5 rounded text-[11px] font-medium text-text-secondary border border-border">
-                                                                        {a.nom}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Schedule conflict warning */}
-                                                        {s.conflitHoraire && !isReservedByMe && (
-                                                            <div className="mt-1 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[11.5px] font-medium flex items-center gap-1.5">
-                                                                <span>⚠️</span>
-                                                                <span>Vous avez déjà une séance réservée aux mêmes heures.</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Footer Action Button */}
-                                                    <div className="pt-3 border-t border-border flex items-center justify-between">
-                                                        {isReservedByMe ? (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedSeanceModal(s);
-                                                                    setModalActionType('cancel');
-                                                                }}
-                                                                className="w-full py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/20 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                                                            >
-                                                                <span>🗑️</span> Annuler ma réservation
-                                                            </button>
-                                                        ) : isAvailable ? (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedSeanceModal(s);
-                                                                    setModalActionType('reserve');
-                                                                }}
-                                                                disabled={s.conflitHoraire}
-                                                                className={`w-full py-2 px-3 rounded-lg text-[13px] font-semibold transition-all flex items-center justify-center gap-1.5 border-none cursor-pointer ${s.conflitHoraire
-                                                                        ? 'bg-content-bg text-text-muted cursor-not-allowed border border-border'
-                                                                        : 'bg-primary hover:bg-primary-hover text-white shadow-sm hover:shadow-[0_2px_8px_rgba(67,97,238,0.25)]'
-                                                                    }`}
-                                                            >
-                                                                <span>👉</span> Prendre ce créneau
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                disabled
-                                                                className="w-full py-2 px-3 bg-content-bg text-text-muted rounded-lg text-[13px] font-medium border border-border cursor-not-allowed text-center"
-                                                            >
-                                                                {isFull ? 'Créneau Complet' : 'Non disponible'}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                <div className="flex flex-col h-full overflow-hidden">
+                                    <div className="fc-event-time">{eventInfo.timeText}</div>
+                                    <div className="fc-event-title">{eventInfo.event.title}</div>
+                                    <div className="mt-auto text-[10px] font-semibold tracking-wider pt-1">
+                                        {isReservedByMe ? (
+                                            <span className="flex items-center gap-1"><FiCheck /> Réservé (Vous)</span>
+                                        ) : isCancelled ? (
+                                            <span>Annulé</span>
+                                        ) : isAvailable ? (
+                                            <span>{placesRestantes}/{nombreAssistantsRequis} libre</span>
+                                        ) : (
+                                            <span>Complet</span>
+                                        )}
                                     </div>
                                 </div>
                             );
-                        })
-                    )}
+                        }}
+                    />
                 </div>
             )}
 
@@ -474,12 +452,12 @@ export default function PlanningDisponible() {
                                                 <td className="py-3.5 px-4 text-text-secondary">{s.professeur}</td>
                                                 <td className="py-3.5 px-4">
                                                     {isReservedByMe ? (
-                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold border border-emerald-500/20">
-                                                            ✓ Réservé (Vous)
+                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold border border-emerald-500/20 flex flex-row items-center gap-1.5 w-fit">
+                                                            <FiCheck /> Réservé (Vous)
                                                         </span>
                                                     ) : isAvailable ? (
-                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold">
-                                                            🟢 {s.placesRestantes}/{s.nombreAssistantsRequis} libre
+                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-semibold flex flex-row items-center gap-1.5 w-fit">
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span> {s.placesRestantes}/{s.nombreAssistantsRequis} libre
                                                         </span>
                                                     ) : (
                                                         <span className="px-2 py-0.5 bg-slate-500/10 text-slate-500 rounded text-[11px] font-medium">
@@ -506,8 +484,8 @@ export default function PlanningDisponible() {
                                                             }}
                                                             disabled={s.conflitHoraire}
                                                             className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors border-none cursor-pointer ${s.conflitHoraire
-                                                                    ? 'bg-content-bg text-text-muted cursor-not-allowed border border-border'
-                                                                    : 'bg-primary hover:bg-primary-hover text-white'
+                                                                ? 'bg-content-bg text-text-muted cursor-not-allowed border border-border'
+                                                                : 'bg-primary hover:bg-primary-hover text-white'
                                                                 }`}
                                                         >
                                                             Prendre
@@ -533,7 +511,8 @@ export default function PlanningDisponible() {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between border-b border-border pb-3">
                             <h3 className="text-[17px] font-bold text-text-primary flex items-center gap-2">
-                                {modalActionType === 'reserve' ? '📝 Confirmer la réservation' : '⚠️ Annuler la réservation'}
+                                {modalActionType === 'reserve' ? <FiCheckCircle className="text-emerald-500 text-xl" /> : <FiXCircle className="text-rose-500 text-xl" />}
+                                {modalActionType === 'reserve' ? 'Confirmer la réservation' : 'Annuler la réservation'}
                             </h3>
                             <button
                                 onClick={() => {
@@ -542,7 +521,7 @@ export default function PlanningDisponible() {
                                 }}
                                 className="text-text-muted hover:text-text-primary text-[18px] bg-transparent border-none cursor-pointer"
                             >
-                                ✕
+                                <FiX />
                             </button>
                         </div>
 
@@ -562,22 +541,29 @@ export default function PlanningDisponible() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 text-[13px] text-text-secondary pt-2 border-t border-border/60">
-                                <div>⏰ <span className="font-semibold text-text-primary">{selectedSeanceModal.heureDebut} – {selectedSeanceModal.heureFin}</span></div>
-                                <div>📍 <span className="font-semibold text-text-primary">{selectedSeanceModal.salle || 'Non spécifiée'}</span></div>
-                                <div>👥 Groupe: <span className="font-semibold text-text-primary">{selectedSeanceModal.groupe}</span></div>
-                                <div>👨‍🏫 Prof: <span className="font-semibold text-text-primary">{selectedSeanceModal.professeur}</span></div>
+                                <div><FiClock className="inline -mt-0.5 mr-1" /> <span className="font-semibold text-text-primary">{selectedSeanceModal.heureDebut} – {selectedSeanceModal.heureFin}</span></div>
+                                <div><FiMapPin className="inline -mt-0.5 mr-1" /> <span className="font-semibold text-text-primary">{selectedSeanceModal.salle || 'Non spécifiée'}</span></div>
+                                <div><FiUsers className="inline -mt-0.5 mr-1" /> Groupe: <span className="font-semibold text-text-primary">{selectedSeanceModal.groupe}</span></div>
+                                <div><FiUser className="inline -mt-0.5 mr-1" /> Prof: <span className="font-semibold text-text-primary">{selectedSeanceModal.professeur}</span></div>
                             </div>
                         </div>
 
                         {/* Note / Disclaimer */}
                         {modalActionType === 'reserve' ? (
                             <p className="text-[13px] text-text-secondary leading-relaxed bg-primary/5 p-3 rounded-xl border border-primary/20">
-                                📌 <strong>Engagement :</strong> En validant cette réservation, vous vous engagez à assurer l'encadrement de cette séance de TP. Un e-mail de confirmation et une notification vous seront transmis.
+                                <FiCheckSquare className="inline -mt-0.5 mr-1 text-primary" /> <strong>Engagement :</strong> En validant cette réservation, vous vous engagez à assurer l'encadrement de cette séance de TP. Un e-mail de confirmation et une notification vous seront transmitted.
+                            </p>
+                        ) : modalActionType === 'cancel' ? (
+                            <p className="text-[13px] text-rose-600 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 leading-relaxed">
+                                <FiAlertTriangle className="inline -mt-0.5 mr-1 text-rose-600" /> <strong>Attention :</strong> L'annulation libérera immédiatement votre place pour d'autres assistants et sera enregistrée dans l'historique d'audit.
                             </p>
                         ) : (
-                            <p className="text-[13px] text-rose-600 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 leading-relaxed">
-                                ⚠️ <strong>Attention :</strong> L'annulation libérera immédiatement votre place pour d'autres assistants et sera enregistrée dans l'historique d'audit.
-                            </p>
+                            <div className="text-[13px] text-text-secondary p-3 rounded-xl border border-border bg-content-bg">
+                                <FiInfo className="inline -mt-0.5 mr-1" /> Cette séance ne peut être réservée ni annulée pour le moment.
+                                {selectedSeanceModal.conflitHoraire && !selectedSeanceModal.myAffectationId && (
+                                    <div className="mt-2 text-amber-600 font-medium flex items-center gap-1.5"><FiAlertTriangle /> Vous avez déjà un TP prévu à ces horaires.</div>
+                                )}
+                            </div>
                         )}
 
                         {/* Modal Actions */}
@@ -604,7 +590,7 @@ export default function PlanningDisponible() {
                                         'Confirmer la réservation'
                                     )}
                                 </button>
-                            ) : (
+                            ) : modalActionType === 'cancel' ? (
                                 <button
                                     onClick={handleConfirmCancel}
                                     disabled={submitting}
@@ -616,7 +602,7 @@ export default function PlanningDisponible() {
                                         'Confirmer l\'annulation'
                                     )}
                                 </button>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </div>

@@ -42,12 +42,33 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    // Données à retourner
-    const profile = user.role === 'PROFESSEUR' ? user.professeur : user.assistant;
-    const name = profile ? `${profile.prenom} ${profile.nom}` : 'Utilisateur';
-    const initials = profile
-      ? `${profile.prenom[0]}${profile.nom[0]}`.toUpperCase()
-      : 'U';
+    // Nom & Initiales
+    let name = 'Utilisateur';
+    let initials = 'U';
+
+    if (user.role === 'PROFESSEUR' || user.role === 'RESPONSABLE_PEDAGOGIQUE') {
+      if (user.professeur) {
+        name = `${user.professeur.prenom} ${user.professeur.nom}`;
+        initials = `${user.professeur.prenom[0]}${user.professeur.nom[0]}`.toUpperCase();
+      } else {
+        name = 'Responsable Pédagogique';
+        initials = 'RP';
+      }
+    } else if (user.role === 'ASSISTANT') {
+      if (user.assistant) {
+        name = `${user.assistant.prenom} ${user.assistant.nom}`;
+        initials = `${user.assistant.prenom[0]}${user.assistant.nom[0]}`.toUpperCase();
+      } else {
+        name = 'Assistant TP';
+        initials = 'AS';
+      }
+    } else if (user.role === 'SERVICE_ADMINISTRATIF') {
+      name = 'Service Administratif';
+      initials = 'SA';
+    } else if (user.role === 'ADMIN') {
+      name = 'Administrateur';
+      initials = 'AD';
+    }
 
     res.json({
       token,
@@ -85,11 +106,32 @@ router.get('/me', async (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
 
-    const profile = user.role === 'PROFESSEUR' ? user.professeur : user.assistant;
-    const name = profile ? `${profile.prenom} ${profile.nom}` : 'Utilisateur';
-    const initials = profile
-      ? `${profile.prenom[0]}${profile.nom[0]}`.toUpperCase()
-      : 'U';
+    let name = 'Utilisateur';
+    let initials = 'U';
+
+    if (user.role === 'PROFESSEUR' || user.role === 'RESPONSABLE_PEDAGOGIQUE') {
+      if (user.professeur) {
+        name = `${user.professeur.prenom} ${user.professeur.nom}`;
+        initials = `${user.professeur.prenom[0]}${user.professeur.nom[0]}`.toUpperCase();
+      } else {
+        name = 'Responsable Pédagogique';
+        initials = 'RP';
+      }
+    } else if (user.role === 'ASSISTANT') {
+      if (user.assistant) {
+        name = `${user.assistant.prenom} ${user.assistant.nom}`;
+        initials = `${user.assistant.prenom[0]}${user.assistant.nom[0]}`.toUpperCase();
+      } else {
+        name = 'Assistant TP';
+        initials = 'AS';
+      }
+    } else if (user.role === 'SERVICE_ADMINISTRATIF') {
+      name = 'Service Administratif';
+      initials = 'SA';
+    } else if (user.role === 'ADMIN') {
+      name = 'Administrateur';
+      initials = 'AD';
+    }
 
     res.json({
       id: user.id,

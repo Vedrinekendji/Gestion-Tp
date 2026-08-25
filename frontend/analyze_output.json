@@ -1,0 +1,578 @@
+{
+  "nbSheets": 9,
+  "sheets": [
+    {
+      "name": "23-27 mars 2026",
+      "nbRows": 1000,
+      "nbCols": 10,
+      "totalCells": 10000,
+      "nonEmptyCells": 1210,
+      "headers": [
+        "[Col0]",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "[Col7]",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "COL_0": "BENBEKHOUCHE SANA",
+          "Nom salle": "Salle EM216 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<APP CLASSES GRP B> Ing3 apprenti 05 (SE)",
+          "Matiere": "Initiation Réseaux APP",
+          "Jour": "jeudi",
+          "Date debut": "26/03/2026",
+          "Heure debut": "14:00:00",
+          "COL_7": "",
+          "Temps": "1",
+          "Assistant": ""
+        },
+        {
+          "COL_0": "MENTA ISSA",
+          "Nom salle": "Salle EM216 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<APP CLASSES GRP B> Ing3 apprenti 05 (SE)",
+          "Matiere": "LINUX APP",
+          "Jour": "jeudi",
+          "Date debut": "26/03/2026",
+          "Heure debut": "16:15:00",
+          "COL_7": "",
+          "Temps": "1",
+          "Assistant": ""
+        },
+        {
+          "COL_0": "BENBEKHOUCHE SANA",
+          "Nom salle": "Salle EM322 - E1 (M) (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr11",
+          "Matiere": "POO Java",
+          "Jour": "jeudi",
+          "Date debut": "26/03/2026",
+          "Heure debut": "08:30:00",
+          "COL_7": "",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "COL_0": "BENNAI SOUFIA",
+          "Nom salle": "Salle EM324 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<Spring> Prép'ac Gr01",
+          "Matiere": "Informatique",
+          "Jour": "jeudi",
+          "Date debut": "26/03/2026",
+          "Heure debut": "17:30:00",
+          "COL_7": "",
+          "Temps": "1",
+          "Assistant": ""
+        },
+        {
+          "COL_0": "FEDDAOUI ILHEM",
+          "Nom salle": "Salle EM321 - E1 (M) (45)",
+          "Promo": "<CLASSES> Ing1 Gr01",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "jeudi",
+          "Date debut": "26/03/2026",
+          "Heure debut": "08:30:00",
+          "COL_7": "",
+          "Temps": "2",
+          "Assistant": "François Juguet"
+        }
+      ]
+    },
+    {
+      "name": "30 mars - 3 Avril 2026",
+      "nbRows": 175,
+      "nbCols": 9,
+      "totalCells": 1575,
+      "nonEmptyCells": 1449,
+      "headers": [
+        "[Col0]",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistants à"
+      ],
+      "samples": [
+        {
+          "COL_0": "SICHLER ROMARIC",
+          "Nom salle": "Salle EM222 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<APP CLASSES GRP B> Ing3 apprenti 05 (SE)",
+          "Matiere": "Electronique analogique APP",
+          "Jour": "mercredi",
+          "Date debut": "01/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistants à": ""
+        },
+        {
+          "COL_0": "MNASSRI BALIGH",
+          "Nom salle": "Salle EM219 - E1 (F) (75)",
+          "Promo": "<CLASSES> Ing1 Gr06",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "mercredi",
+          "Date debut": "01/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistants à": "Pablo TELLEZ DE ITA"
+        },
+        {
+          "COL_0": "SEKKIOU IMÈNE",
+          "Nom salle": "Salle EM326 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<CLASSES> Ing2 Gr01",
+          "Matiere": "Systèmes bouclés",
+          "Jour": "mercredi",
+          "Date debut": "01/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistants à": "Ethan baudrillard"
+        },
+        {
+          "COL_0": "HAJ HAMAD IMEN",
+          "Nom salle": "Salle EM312 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<CLASSES> Ing2 Gr13",
+          "Matiere": "Systèmes bouclés",
+          "Jour": "mercredi",
+          "Date debut": "01/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistants à": ""
+        },
+        {
+          "COL_0": "HINA MANOLO",
+          "Nom salle": "Salle EM323 - E1 (M) (49)",
+          "Promo": "<CLASSES> Ing2 Gr14 (renfo)",
+          "Matiere": "Web dynamique",
+          "Jour": "mercredi",
+          "Date debut": "01/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistants à": ""
+        }
+      ]
+    },
+    {
+      "name": "07- 10 avril",
+      "nbRows": 999,
+      "nbCols": 10,
+      "totalCells": 9990,
+      "nonEmptyCells": 945,
+      "headers": [
+        "Nom enseignant",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant",
+        "[Col9]"
+      ],
+      "samples": [
+        {
+          "Nom enseignant": "KHOURY CLAUDE",
+          "Nom salle": "Salle EM222 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr12",
+          "Matiere": "Calcul embarqué",
+          "Jour": "mardi",
+          "Date debut": "07/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "",
+          "COL_9": ""
+        },
+        {
+          "Nom enseignant": "BENBEKHOUCHE SANA",
+          "Nom salle": "Salle EM224 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<CLASSES> Ing1 Gr14",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "mardi",
+          "Date debut": "07/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "",
+          "COL_9": ""
+        },
+        {
+          "Nom enseignant": "BEKKOUCHE ROUMAISSA",
+          "Nom salle": "Salle EM326 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr11",
+          "Matiere": "Initiation aux réseaux",
+          "Jour": "mardi",
+          "Date debut": "07/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "",
+          "COL_9": ""
+        },
+        {
+          "Nom enseignant": "BOUBAKRI ANIS",
+          "Nom salle": "Salle EM220 - E1 (M) (48)",
+          "Promo": "<CLASSES> Ing1 Gr10",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "mardi",
+          "Date debut": "07/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "",
+          "COL_9": ""
+        },
+        {
+          "Nom enseignant": "MNASSRI BALIGH",
+          "Nom salle": "Salle EM317 - E1 (M) (49)",
+          "Promo": "<CLASSES> Ing1 Gr13",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "mardi",
+          "Date debut": "07/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "",
+          "COL_9": ""
+        }
+      ]
+    },
+    {
+      "name": "13-17 avril",
+      "nbRows": 149,
+      "nbCols": 9,
+      "totalCells": 1341,
+      "nonEmptyCells": 1245,
+      "headers": [
+        "Nom enseignant",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "Nom enseignant": "SEGADO JEAN PIERRE",
+          "Nom salle": "Salle EM111 - E1 (49)",
+          "Promo": "<CLASSES> Ing1 Gr17 (renfo)",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "jeudi",
+          "Date debut": "16/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": "Sirine Adnani"
+        },
+        {
+          "Nom enseignant": "BOUBAKRI ANIS",
+          "Nom salle": "Salle EM124 - E1 (40)",
+          "Promo": "<CLASSES> Ing1 Gr10",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "jeudi",
+          "Date debut": "16/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "BENASSOU LINA FERIEL",
+          "Nom salle": "Salle EM127 - E1 (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr10",
+          "Matiere": "Initiation aux réseaux",
+          "Jour": "jeudi",
+          "Date debut": "16/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "MNASSRI BALIGH",
+          "Nom salle": "Salle EM215 - E1 (M) (40)",
+          "Promo": "<CLASSES> Ing1 Gr06",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "jeudi",
+          "Date debut": "16/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": "Nathan LEDESMA"
+        },
+        {
+          "Nom enseignant": "HAJ HAMAD IMEN",
+          "Nom salle": "Salle EM218 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<CLASSES> Ing1 Gr11",
+          "Matiere": "Électronique analogique",
+          "Jour": "jeudi",
+          "Date debut": "16/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": "Azzedine SAADI"
+        }
+      ]
+    },
+    {
+      "name": "20 - 24 avril",
+      "nbRows": 52,
+      "nbCols": 9,
+      "totalCells": 468,
+      "nonEmptyCells": 274,
+      "headers": [
+        "[Col0]",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "36",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "36": "jeudi",
+          "COL_0": "MENTA ISSA",
+          "Nom salle": "Salle EM124 - E1 (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr02",
+          "Matiere": "POO Java",
+          "Date debut": "23/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "36": "jeudi",
+          "COL_0": "MNASSRI BALIGH",
+          "Nom salle": "Salle EM127 - E1 (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr13",
+          "Matiere": "POO Java",
+          "Date debut": "23/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "36": "jeudi",
+          "COL_0": "MENTA ISSA",
+          "Nom salle": "Salle EM124 - E1 (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr02",
+          "Matiere": "POO Java",
+          "Date debut": "23/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "36": "jeudi",
+          "COL_0": "MNASSRI BALIGH",
+          "Nom salle": "Salle EM127 - E1 (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr13",
+          "Matiere": "POO Java",
+          "Date debut": "23/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "36": "lundi",
+          "COL_0": "EUTAMENE NOREDDINE",
+          "Nom salle": "Salle EM215 - E1 (M) (40)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr07",
+          "Matiere": "POO Java",
+          "Date debut": "20/04/2026",
+          "Heure debut": "17:30:00",
+          "Temps": "1",
+          "Assistant": ""
+        }
+      ]
+    },
+    {
+      "name": "27 - 30 Avril",
+      "nbRows": 4,
+      "nbCols": 9,
+      "totalCells": 36,
+      "nonEmptyCells": 35,
+      "headers": [
+        "Nom enseignant",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "Nom enseignant": "SEKKIOU IMÈNE",
+          "Nom salle": "Salle EM222 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<Spring> Prép'ac Gr01",
+          "Matiere": "Électronique",
+          "Jour": "jeudi",
+          "Date debut": "30/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": "En soutenance"
+        },
+        {
+          "Nom enseignant": "BENNAI SOUFIA",
+          "Nom salle": "Salle EM225 - E1 (M) (40)",
+          "Promo": "<Spring> Prép'ac Gr01",
+          "Matiere": "Informatique",
+          "Jour": "mercredi",
+          "Date debut": "29/04/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "SEKKIOU IMÈNE",
+          "Nom salle": "Salle EM216 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<Spring> Prép'ac Gr01",
+          "Matiere": "Électronique",
+          "Jour": "mercredi",
+          "Date debut": "29/04/2026",
+          "Heure debut": "10:45:00",
+          "Temps": "2",
+          "Assistant": "En soutenance"
+        }
+      ]
+    },
+    {
+      "name": "04-07 mai 2026",
+      "nbRows": 145,
+      "nbCols": 9,
+      "totalCells": 1305,
+      "nonEmptyCells": 1223,
+      "headers": [
+        "Nom enseignant",
+        "Nom salle",
+        "Promo",
+        "Matiere",
+        "Jour",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "Nom enseignant": "MNASSRI BALIGH",
+          "Nom salle": "Salle SC217 - E1 (40)",
+          "Promo": "<CLASSES> Ing1 Gr13",
+          "Matiere": "Prog structurée avancée",
+          "Jour": "lundi",
+          "Date debut": "4/5/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "BENBEKHOUCHE SANA",
+          "Nom salle": "Salle SC004 - E1 (M) (45)",
+          "Promo": "<INIT CLASSES S6> Ing3 Gr14",
+          "Matiere": "Initiation aux réseaux",
+          "Jour": "lundi",
+          "Date debut": "4/5/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "FEDDAOUI ILHEM",
+          "Nom salle": "Salle EM124 - E1 (40)",
+          "Promo": "<CLASSES> Ing2 Gr10",
+          "Matiere": "Web dynamique",
+          "Jour": "lundi",
+          "Date debut": "4/5/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "CHRISTOU CHRISTOS",
+          "Nom salle": "Salle EM127 - E1 (40)",
+          "Promo": "<CLASSES> Ing2 Gr06",
+          "Matiere": "Web dynamique",
+          "Jour": "lundi",
+          "Date debut": "4/5/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        },
+        {
+          "Nom enseignant": "SCHNEIDER MAXIME",
+          "Nom salle": "Salle EM326 (Labo Elec) - E1 (F) (40) (Meet-up)",
+          "Promo": "<CLASSES> Ing1 Gr16",
+          "Matiere": "Électronique analogique",
+          "Jour": "lundi",
+          "Date debut": "4/5/2026",
+          "Heure debut": "08:30:00",
+          "Temps": "2",
+          "Assistant": ""
+        }
+      ]
+    },
+    {
+      "name": "Soutien info 21 mai 2026",
+      "nbRows": 5,
+      "nbCols": 7,
+      "totalCells": 35,
+      "nonEmptyCells": 34,
+      "headers": [
+        "Promo",
+        "Groupe",
+        "Matiere",
+        "Date debut",
+        "Heure debut",
+        "Temps",
+        "Assistant"
+      ],
+      "samples": [
+        {
+          "Promo": "Ing1",
+          "Groupe": "1",
+          "Matiere": "Prog structurée avancée",
+          "Date debut": "21/5/2026",
+          "Heure debut": "14:00:00",
+          "Temps": "2",
+          "Assistant": "Mohamed Bennis"
+        },
+        {
+          "Promo": "Ing1",
+          "Groupe": "2",
+          "Matiere": "Prog structurée avancée",
+          "Date debut": "21/5/2026",
+          "Heure debut": "14:00:00",
+          "Temps": "2",
+          "Assistant": "Guy-Charbel Kairouz"
+        },
+        {
+          "Promo": "Ing1",
+          "Groupe": "3",
+          "Matiere": "Prog structurée avancée",
+          "Date debut": "21/5/2026",
+          "Heure debut": "14:00:00",
+          "Temps": "2",
+          "Assistant": "Erika Jonsson"
+        },
+        {
+          "Promo": "Ing1",
+          "Groupe": "4",
+          "Matiere": "Prog structurée avancée",
+          "Date debut": "21/5/2026",
+          "Heure debut": "14:00:00",
+          "Temps": "2",
+          "Assistant": ""
+        }
+      ]
+    },
+    {
+      "name": "Feuille 12",
+      "empty": true
+    }
+  ]
+}
