@@ -2,11 +2,12 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-export type UserRole = 'admin' | 'responsable_pedagogique' | 'professeur' | 'assistant' | 'service_administratif';
+export type UserRole = 'admin' | 'professeur' | 'assistant';
 
 export interface User {
   id?: number;
   email: string;
+  login?: string;   // Identifiant de connexion généré (assistants)
   name: string;
   role: UserRole;
   initials: string;
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fullUser: User = {
       id: userData.id,
       email: userData.email,
+      login: userData.login,
       name: userData.name,
       role: userData.role as UserRole,
       initials: userData.initials,

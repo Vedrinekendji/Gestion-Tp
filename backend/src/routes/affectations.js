@@ -84,7 +84,7 @@ router.get('/', async (req, res) => {
 // POST /api/affectations/verifier-disponibilite
 // Vérification automatique de conflit
 // =====================
-router.post('/verifier-disponibilite', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.post('/verifier-disponibilite', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { seanceId, assistantId } = req.body;
 
@@ -142,7 +142,7 @@ router.post('/verifier-disponibilite', requireRole('RESPONSABLE_PEDAGOGIQUE', 'P
 // POST /api/affectations
 // Affecter un assistant à une séance
 // =====================
-router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { seanceId, assistantId } = req.body;
 
@@ -228,7 +228,7 @@ router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), 
 // PATCH /api/affectations/:id
 // Mettre à jour le statut
 // =====================
-router.patch('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.patch('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { statut } = req.body;
 
@@ -257,7 +257,7 @@ router.patch('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN
 // DELETE /api/affectations/:id
 // Supprimer une affectation
 // =====================
-router.delete('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.delete('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     await prisma.affectation.delete({
       where: { id: parseInt(req.params.id) },

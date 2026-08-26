@@ -14,9 +14,9 @@ function parseMinutes(hhmm) {
 }
 
 // =====================
-// GET /api/seances (Professeur, Responsable, Admin, Service Admin)
+// GET /api/seances (Professeur, Admin uniquement)
 // =====================
-router.get('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
+router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     let where = {};
 
@@ -84,9 +84,9 @@ router.get('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'S
 });
 
 // =====================
-// GET /api/seances/disponibles (Assistant, Admin, Responsable)
+// GET /api/seances/disponibles (Assistant, Professeur, Admin)
 // =====================
-router.get('/disponibles', requireRole('ASSISTANT', 'ADMIN', 'RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
+router.get('/disponibles', requireRole('ASSISTANT', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     let assistantId = null;
     let assistantAffectations = [];
@@ -196,9 +196,9 @@ router.get('/disponibles', requireRole('ASSISTANT', 'ADMIN', 'RESPONSABLE_PEDAGO
 });
 
 // =====================
-// POST /api/seances (Manually create a session with validations)
+// POST /api/seances (Création manuelle, Prof ou Admin uniquement)
 // =====================
-router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { matiereId, professeurId, groupe, date, heureDebut, heureFin, salle, type, niveau, nombreAssistantsRequis } = req.body;
 
@@ -272,9 +272,9 @@ router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), 
 });
 
 // =====================
-// PUT /api/seances/:id (Edit session)
+// PUT /api/seances/:id (Édition manuelle, Prof ou Admin uniquement)
 // =====================
-router.put('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.put('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { matiereId, groupe, date, heureDebut, heureFin, salle, statut, nombreAssistantsRequis } = req.body;
@@ -309,94 +309,131 @@ router.put('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN')
   }
 });
 
-// =====================
-// POST /api/seances/:id/reserver (Assistant slot reservation)
-// =====================
+// =========================================================================
+// POST /api/seances/:id/reserver (Réservation immédiate transactionnelle)
+// =========================================================================
 router.post('/:id/reserver', requireRole('ASSISTANT'), async (req, res) => {
   try {
     const seanceId = parseInt(req.params.id);
-    const assistant = await prisma.assistant.findUnique({
-      where: { userId: req.user.userId },
-      include: {
-        affectations: {
-          where: { statut: { in: ['EN_ATTENTE', 'VALIDEE'] } },
-          include: { seance: true },
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Récupérer l'assistant
+      const assistant = await tx.assistant.findUnique({
+        where: { userId: req.user.userId },
+        include: {
+          affectations: {
+            where: { statut: { in: ['EN_ATTENTE', 'VALIDEE'] } },
+            include: { seance: true },
+          },
         },
-      },
+      });
+
+      if (!assistant) {
+        throw new Error('ASSISTANT_NOT_FOUND');
+      }
+
+      if (assistant.statut !== 'ACTIF') {
+        throw new Error('ASSISTANT_INACTIVE');
+      }
+
+      // 2. Récupérer la séance avec ses affectations actives (avec lock)
+      const seance = await tx.seance.findUnique({
+        where: { id: seanceId },
+        include: {
+          matiere: true,
+          affectations: {
+            where: { statut: { in: ['EN_ATTENTE', 'VALIDEE'] } }
+          },
+        },
+      });
+
+      if (!seance || seance.statut === 'ANNULEE') {
+        throw new Error('SEANCE_NOT_AVAILABLE');
+      }
+
+      // 3. Vérifier s'il reste des places libres
+      const placesTotales = seance.nombreAssistantsRequis || 1;
+      if (seance.affectations.length >= placesTotales) {
+        throw new Error('NO_SEATS_LEFT');
+      }
+
+      // 4. Vérifier si l'assistant a déjà réservé ce créneau
+      const existing = seance.affectations.find(a => a.assistantId === assistant.id);
+      if (existing) {
+        throw new Error('ALREADY_RESERVED');
+      }
+
+      // 5. Vérifier les conflits d'horaires
+      const targetDate = seance.date.toISOString().split('T')[0];
+      const targetStart = parseMinutes(seance.heureDebut);
+      const targetEnd = parseMinutes(seance.heureFin);
+
+      const hasConflict = assistant.affectations.some(aff => {
+        const s = aff.seance;
+        if (!s || s.id === seance.id || s.statut === 'ANNULEE') return false;
+        const sDate = s.date.toISOString().split('T')[0];
+        if (sDate !== targetDate) return false;
+        const sStart = parseMinutes(s.heureDebut);
+        const sEnd = parseMinutes(s.heureFin);
+        return sStart < targetEnd && sEnd > targetStart;
+      });
+
+      if (hasConflict) {
+        throw new Error('SCHEDULE_CONFLICT');
+      }
+
+      const duration = Math.max(1, (targetEnd - targetStart) / 60) || 2.0;
+
+      // 6. Créer directement l'affectation VALIDÉE (sans demande manuelle)
+      const affectation = await tx.affectation.create({
+        data: {
+          seanceId,
+          assistantId: assistant.id,
+          statut: 'VALIDEE', // Réservation directe immédiate
+          heuresCount: duration,
+        },
+      });
+
+      // 7. Enregistrer une entrée d'historique pédagogique dans la transaction
+      await tx.historiquePeda.create({
+        data: {
+          utilisateur: `${assistant.prenom} ${assistant.nom} (Assistant)`,
+          action: 'RESERVATION',
+          objet: `Séance TP ${seance.matiere.nom} (${seance.groupe})`,
+          details: `Créneau réservé et validé immédiatement le ${new Date(seance.date).toLocaleDateString('fr-FR')} de ${seance.heureDebut} à ${seance.heureFin}`,
+        },
+      });
+
+      return { affectation, seance };
     });
 
-    if (!assistant) {
+    res.status(201).json({
+      message: 'Votre réservation a été immédiate et validée.',
+      affectation: result.affectation
+    });
+
+  } catch (error) {
+    if (error.message === 'ASSISTANT_NOT_FOUND') {
       return res.status(404).json({ error: 'Profil assistant non trouvé.' });
     }
-
-    if (assistant.statut !== 'ACTIF') {
+    if (error.message === 'ASSISTANT_INACTIVE') {
       return res.status(400).json({ error: 'Votre compte assistant est inactif.' });
     }
-
-    const seance = await prisma.seance.findUnique({
-      where: { id: seanceId },
-      include: {
-        matiere: true,
-        affectations: { where: { statut: { in: ['EN_ATTENTE', 'VALIDEE'] } } },
-      },
-    });
-
-    if (!seance || seance.statut === 'ANNULEE') {
-      return res.status(404).json({ error: 'Séance non disponible.' });
+    if (error.message === 'SEANCE_NOT_AVAILABLE') {
+      return res.status(404).json({ error: 'Séance non disponible à la réservation.' });
+    }
+    if (error.message === 'NO_SEATS_LEFT') {
+      return res.status(400).json({ error: 'Ce créneau vient d\'être réservé par un autre assistant.' });
+    }
+    if (error.message === 'ALREADY_RESERVED') {
+      return res.status(400).json({ error: 'Vous avez déjà réservé cette séance.' });
+    }
+    if (error.message === 'SCHEDULE_CONFLICT') {
+      return res.status(400).json({ error: 'Vous avez un conflit d\'horaire avec une autre affectation active.' });
     }
 
-    const placesTotales = seance.nombreAssistantsRequis || 1;
-    if (seance.affectations.length >= placesTotales) {
-      return res.status(400).json({ error: 'Toutes les places pour cette séance sont déjà réservées.' });
-    }
-
-    const existing = seance.affectations.find(a => a.assistantId === assistant.id);
-    if (existing) {
-      return res.status(400).json({ error: 'Vous avez déjà réservé ou demandé cette séance.' });
-    }
-
-    const targetDate = seance.date.toISOString().split('T')[0];
-    const targetStart = parseMinutes(seance.heureDebut);
-    const targetEnd = parseMinutes(seance.heureFin);
-
-    const hasConflict = assistant.affectations.some(aff => {
-      const s = aff.seance;
-      if (!s || s.id === seance.id || s.statut === 'ANNULEE') return false;
-      const sDate = s.date.toISOString().split('T')[0];
-      if (sDate !== targetDate) return false;
-      const sStart = parseMinutes(s.heureDebut);
-      const sEnd = parseMinutes(s.heureFin);
-      return sStart < targetEnd && sEnd > targetStart;
-    });
-
-    if (hasConflict) {
-      return res.status(400).json({ error: 'Conflit d\'horaire avec un autre TP déjà prévu.' });
-    }
-
-    const duration = Math.max(1, (targetEnd - targetStart) / 60) || 2.0;
-
-    const affectation = await prisma.affectation.create({
-      data: {
-        seanceId,
-        assistantId: assistant.id,
-        statut: 'EN_ATTENTE',
-        heuresCount: duration,
-      },
-    });
-
-    await prisma.historiquePeda.create({
-      data: {
-        utilisateur: `${assistant.prenom} ${assistant.nom} (Assistant)`,
-        action: 'DEMANDE_CRENEAU',
-        objet: `Séance TP ${seance.matiere.nom} (${seance.groupe})`,
-        details: `Demande de créneau du ${new Date(seance.date).toLocaleDateString('fr-FR')} de ${seance.heureDebut} à ${seance.heureFin}`,
-      },
-    });
-
-    res.status(201).json({ message: 'Réservation enregistrée avec succès.', affectation });
-  } catch (error) {
     console.error('[SEANCES/RESERVER]', error);
-    res.status(500).json({ error: 'Erreur lors de la réservation du créneau.' });
+    res.status(500).json({ error: 'Erreur interne lors de la réservation du créneau.' });
   }
 });
 

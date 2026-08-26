@@ -10,7 +10,7 @@ router.use(authMiddleware);
 // =====================
 // GET /api/assistants
 // =====================
-router.get('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
+router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const assistants = await prisma.assistant.findMany({
       include: {
@@ -63,7 +63,7 @@ router.get('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'S
 // =====================
 // GET /api/assistants/:id
 // =====================
-router.get('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
+router.get('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const assistant = await prisma.assistant.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -87,7 +87,7 @@ router.get('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN',
 // =====================
 // POST /api/assistants
 // =====================
-router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { nom, prenom, email, telephone, note, formation, niveau, matieres } = req.body;
 
@@ -155,7 +155,7 @@ router.post('/', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), 
 // =====================
 // PATCH /api/assistants/:id
 // =====================
-router.patch('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.patch('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const { statut, note, heuresMax } = req.body;
     const id = parseInt(req.params.id);
@@ -180,7 +180,7 @@ router.patch('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN
 // =====================
 // DELETE /api/assistants/:id
 // =====================
-router.delete('/:id', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.delete('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
     const assistant = await prisma.assistant.findUnique({
       where: { id: parseInt(req.params.id) },

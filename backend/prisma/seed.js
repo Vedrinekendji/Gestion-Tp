@@ -39,13 +39,14 @@ async function main() {
   });
   console.log('👑 Admin créé :', adminUser.email);
 
-  // 2. RESPONSABLE PÉDAGOGIQUE / PROFESSEUR
+  // 2. PROFESSEUR (ancien Responsable Pédagogique)
   const hashResp = await bcrypt.hash('resp123', 10);
   const respUser = await prisma.user.create({
     data: {
       email: 'responsable@gestiontp.dz',
+      login: 'KB26B', // Karim Benali
       password: hashResp,
-      role: 'RESPONSABLE_PEDAGOGIQUE',
+      role: 'PROFESSEUR',
       professeur: {
         create: {
           nom: 'Benali',
@@ -57,7 +58,7 @@ async function main() {
     },
     include: { professeur: true },
   });
-  console.log('🎓 Responsable Pédagogique créé :', respUser.email);
+  console.log('🎓 Professeur (ex-responsable) créé :', respUser.email);
 
   // Professeur régulier
   const hashProf = await bcrypt.hash('prof123', 10);
@@ -79,22 +80,24 @@ async function main() {
   });
   console.log('👨‍🏫 Professeur créé :', profUser.email);
 
-  // 3. SERVICE ADMINISTRATIF
+  // 3. ADMINISTRATEUR SECONDAIRE (ancien Service Administratif)
   const hashService = await bcrypt.hash('service123', 10);
   const serviceUser = await prisma.user.create({
     data: {
       email: 'admin.service@gestiontp.dz',
+      login: 'AD2',
       password: hashService,
-      role: 'SERVICE_ADMINISTRATIF',
+      role: 'ADMIN',
     },
   });
-  console.log('💼 Service Administratif créé :', serviceUser.email);
+  console.log('👑 Admin secondaire (ex-service administratif) créé :', serviceUser.email);
 
   // 4. ASSISTANTS
   const hashAssistant = await bcrypt.hash('assistant123', 10);
   const assistantUser1 = await prisma.user.create({
     data: {
       email: 'assistant@gestiontp.dz',
+      login: 'P26M', // Paul Martin
       password: hashAssistant,
       role: 'ASSISTANT',
       assistant: {
@@ -116,6 +119,7 @@ async function main() {
   const assistantUser2 = await prisma.user.create({
     data: {
       email: 'yasmine.k@gestiontp.dz',
+      login: 'Y26K', // Yasmine Khadraoui
       password: hashAssistant,
       role: 'ASSISTANT',
       assistant: {
@@ -133,7 +137,7 @@ async function main() {
     },
     include: { assistant: true },
   });
-  console.log('👨‍🎓 Assistants créés.');
+  console.log('👨‍🎓 Assistants (avec logins) créés.');
 
   // 5. MATIÈRES
   const matAlgo = await prisma.matiere.create({

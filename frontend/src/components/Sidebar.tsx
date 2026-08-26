@@ -5,7 +5,6 @@ import {
   FiUserCheck,
   FiCalendar,
   FiUsers,
-  FiClock,
   FiCheckCircle,
   FiFileText,
   FiActivity,
@@ -15,39 +14,34 @@ import {
   FiLogOut,
   FiSliders,
   FiUploadCloud,
-  FiCheckSquare
 } from 'react-icons/fi';
 
-const respMenu = [
+// Menu Professeur (et Admin en tant que prof)
+const professeurMenu = [
   { to: '/dashboard', label: 'Tableau de bord', icon: <FiGrid size={18} /> },
   { to: '/candidatures', label: 'Candidatures', icon: <FiUserCheck size={18} /> },
-  { to: '/planification', label: 'Planification', icon: <FiCalendar size={18} /> },
-  { to: '/import-planning', label: 'Import Planning', icon: <FiUploadCloud size={18} /> },
-  { to: '/assignation', label: 'Assignation Manuelle', icon: <FiUserCheck size={18} /> },
-  { to: '/validation', label: 'Validation des Heures', icon: <FiCheckSquare size={18} /> },
-  { to: '/seances', label: 'Séances de TP', icon: <FiCalendar size={18} /> },
+  { to: '/seances', label: 'Séances TP', icon: <FiCalendar size={18} /> },
   { to: '/affectation', label: 'Affectations', icon: <FiUsers size={18} /> },
-  { to: '/demandes-creneaux', label: 'Demandes de créneaux', icon: <FiClock size={18} /> },
-  { to: '/validation-heures', label: 'Validation des heures', icon: <FiCheckCircle size={18} /> },
+  { to: '/validation-heures', label: 'Validation Heures', icon: <FiCheckCircle size={18} /> },
   { to: '/assistants', label: 'Assistants', icon: <FiUser size={18} /> },
   { to: '/historique', label: 'Historique', icon: <FiActivity size={18} /> },
 ];
 
-const serviceAdminMenu = [
-  { to: '/dashboard', label: 'Tableau de bord', icon: <FiGrid size={18} /> },
-  { to: '/rapports', label: 'Rapports mensuels', icon: <FiFileText size={18} /> },
-  { to: '/assistants', label: 'Assistants', icon: <FiUsers size={18} /> },
-  { to: '/validation-heures', label: 'Heures validées', icon: <FiCheckCircle size={18} /> },
-  { to: '/historique', label: 'Historique', icon: <FiActivity size={18} /> },
-];
-
+// Menu Admin (accès total)
 const adminMenu = [
   { to: '/dashboard', label: 'Tableau de bord', icon: <FiGrid size={18} /> },
-  { to: '/admin/utilisateurs', label: 'Gestion Utilisateurs', icon: <FiUsers size={18} /> },
+  { to: '/candidatures', label: 'Candidatures', icon: <FiUserCheck size={18} /> },
+  { to: '/seances', label: 'Séances TP', icon: <FiCalendar size={18} /> },
+  { to: '/affectation', label: 'Affectations', icon: <FiUsers size={18} /> },
+  { to: '/validation-heures', label: 'Validation Heures', icon: <FiCheckCircle size={18} /> },
+  { to: '/assistants', label: 'Assistants', icon: <FiUser size={18} /> },
   { to: '/import-planning', label: 'Import Planning', icon: <FiUploadCloud size={18} /> },
+  { to: '/rapports', label: 'Rapports', icon: <FiFileText size={18} /> },
   { to: '/historique', label: 'Logs d\'Audit', icon: <FiActivity size={18} /> },
+  { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: <FiSettings size={18} /> },
 ];
 
+// Menu Assistant
 const assistantMenu = [
   { to: '/dashboard', label: 'Mon tableau de bord', icon: <FiGrid size={18} /> },
   { to: '/mes-disponibilites', label: 'Mes disponibilités', icon: <FiSliders size={18} /> },
@@ -67,10 +61,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   let menu = assistantMenu;
   if (user?.role === 'admin') {
     menu = adminMenu;
-  } else if (user?.role === 'responsable_pedagogique' || user?.role === 'professeur') {
-    menu = respMenu;
-  } else if (user?.role === 'service_administratif') {
-    menu = serviceAdminMenu;
+  } else if (user?.role === 'professeur') {
+    menu = professeurMenu;
   }
 
   const handleLogout = () => {
@@ -105,10 +97,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div className="px-3.5 py-2 border-b border-sidebar-border/40 bg-white/5 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
-            {user?.role === 'responsable_pedagogique' ? 'Responsable Pédagogique' :
-              user?.role === 'service_administratif' ? 'Service Administratif' :
-                user?.role === 'professeur' ? 'Professeur' :
-                  user?.role === 'admin' ? 'Administrateur' : 'Assistant TP'}
+            {user?.role === 'professeur' ? 'Professeur' :
+              user?.role === 'admin' ? 'Administrateur' : 'Assistant TP'}
           </span>
         </div>
       )}

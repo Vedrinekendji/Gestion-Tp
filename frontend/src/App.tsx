@@ -4,29 +4,37 @@ import { useAuth, UserRole } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
-// Pages
+// Pages communes
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Historique from './pages/Historique';
+
+// Pages Admin/Professeur
 import Candidatures from './pages/Candidatures';
 import Planning from './pages/Planning';
 import Affectation from './pages/Affectation';
-import DemandesCreneaux from './pages/DemandesCreneaux';
 import ValidationHeures from './pages/ValidationHeures';
-import Historique from './pages/Historique';
 import RapportsMensuels from './pages/RapportsMensuels';
 import Assistants from './pages/Assistants';
 import Professeurs from './pages/Professeurs';
 import Matieres from './pages/Matieres';
-import Disponibilites from './pages/Disponibilites';
 import ImportPlanning from './pages/ImportPlanning';
+import AdminUtilisateurs from './pages/AdminUtilisateurs';
+import AddAssistant from './pages/AddAssistant';
+
+// Pages Assistant
+import Disponibilites from './pages/Disponibilites';
 import MesSeances from './pages/MesSeances';
 import PlanningDisponible from './pages/PlanningDisponible';
 
-import AddAssistant from './pages/AddAssistant';
-import AdminUtilisateurs from './pages/AdminUtilisateurs';
-
 // Route guard component
-function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
+function ProtectedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+}) {
   const { user, token } = useAuth();
   if (!token || !user) {
     return <Navigate to="/login" replace />;
@@ -64,67 +72,66 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
+            {/* Dashboard : tous les rôles authentifiés */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
+            {/* === ROUTES PROFESSEUR & ADMIN === */}
+
             <Route path="/candidatures" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <Candidatures />
               </ProtectedRoute>
             } />
 
             <Route path="/seances" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <Planning />
               </ProtectedRoute>
             } />
 
             <Route path="/affectation" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <Affectation />
               </ProtectedRoute>
             } />
 
-            <Route path="/demandes-creneaux" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur']}>
-                <DemandesCreneaux />
-              </ProtectedRoute>
-            } />
-
             <Route path="/validation-heures" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur', 'service_administratif']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <ValidationHeures />
               </ProtectedRoute>
             } />
 
             <Route path="/historique" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur', 'admin', 'service_administratif']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <Historique />
               </ProtectedRoute>
             } />
 
             <Route path="/rapports" element={
-              <ProtectedRoute allowedRoles={['service_administratif', 'admin']}>
+              <ProtectedRoute allowedRoles={['admin']}>
                 <RapportsMensuels />
               </ProtectedRoute>
             } />
 
             <Route path="/assistants" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur', 'service_administratif', 'admin']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <Assistants />
               </ProtectedRoute>
             } />
 
             <Route path="/ajouter-assistant" element={
-              <ProtectedRoute allowedRoles={['responsable_pedagogique', 'professeur', 'admin']}>
+              <ProtectedRoute allowedRoles={['professeur', 'admin']}>
                 <AddAssistant />
               </ProtectedRoute>
             } />
 
             <Route path="/import-planning" element={
-              <ProtectedRoute allowedRoles={['admin', 'responsable_pedagogique']}>
+              <ProtectedRoute allowedRoles={['admin']}>
                 <ImportPlanning />
               </ProtectedRoute>
             } />
+
+            {/* === ROUTES ADMIN EXCLUSIVES === */}
 
             <Route path="/admin/utilisateurs" element={
               <ProtectedRoute allowedRoles={['admin']}>
@@ -133,17 +140,36 @@ export default function App() {
             } />
 
             <Route path="/professeurs" element={
-              <ProtectedRoute allowedRoles={['admin']}><Professeurs /></ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Professeurs />
+              </ProtectedRoute>
             } />
 
             <Route path="/matieres" element={
-              <ProtectedRoute allowedRoles={['admin', 'responsable_pedagogique']}><Matieres /></ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Matieres />
+              </ProtectedRoute>
             } />
 
-            {/* Assistant specific routes */}
-            <Route path="/mes-disponibilites" element={<ProtectedRoute allowedRoles={['assistant']}><Disponibilites /></ProtectedRoute>} />
-            <Route path="/mes-seances" element={<ProtectedRoute allowedRoles={['assistant']}><MesSeances /></ProtectedRoute>} />
-            <Route path="/tps-disponibles" element={<ProtectedRoute allowedRoles={['assistant']}><PlanningDisponible /></ProtectedRoute>} />
+            {/* === ROUTES ASSISTANT === */}
+
+            <Route path="/mes-disponibilites" element={
+              <ProtectedRoute allowedRoles={['assistant']}>
+                <Disponibilites />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/mes-seances" element={
+              <ProtectedRoute allowedRoles={['assistant']}>
+                <MesSeances />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/tps-disponibles" element={
+              <ProtectedRoute allowedRoles={['assistant']}>
+                <PlanningDisponible />
+              </ProtectedRoute>
+            } />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -10,15 +10,20 @@ const router = express.Router();
 // =====================
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // email peut contenir l'email ou le login
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis.' });
+      return res.status(400).json({ error: 'Identifiant (email ou login) et mot de passe requis.' });
     }
 
-    // Trouver l'utilisateur
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Trouver l'utilisateur par email ou login
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { login: email }
+        ]
+      },
       include: {
         professeur: true,
         assistant: true,
@@ -26,13 +31,13 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+      return res.status(401).json({ error: 'Identifiant ou mot de passe incorrect.' });
     }
 
     // Vérifier le mot de passe
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+      return res.status(401).json({ error: 'Identifiant ou mot de passe incorrect.' });
     }
 
     // Générer le JWT
@@ -46,13 +51,13 @@ router.post('/login', async (req, res) => {
     let name = 'Utilisateur';
     let initials = 'U';
 
-    if (user.role === 'PROFESSEUR' || user.role === 'RESPONSABLE_PEDAGOGIQUE') {
+    if (user.role === 'PROFESSEUR') {
       if (user.professeur) {
         name = `${user.professeur.prenom} ${user.professeur.nom}`;
         initials = `${user.professeur.prenom[0]}${user.professeur.nom[0]}`.toUpperCase();
       } else {
-        name = 'Responsable Pédagogique';
-        initials = 'RP';
+        name = 'Professeur';
+        initials = 'PR';
       }
     } else if (user.role === 'ASSISTANT') {
       if (user.assistant) {
@@ -62,9 +67,6 @@ router.post('/login', async (req, res) => {
         name = 'Assistant TP';
         initials = 'AS';
       }
-    } else if (user.role === 'SERVICE_ADMINISTRATIF') {
-      name = 'Service Administratif';
-      initials = 'SA';
     } else if (user.role === 'ADMIN') {
       name = 'Administrateur';
       initials = 'AD';
@@ -75,6 +77,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
+        login: user.login,
         role: user.role.toLowerCase(),
         name,
         initials,
@@ -109,13 +112,13 @@ router.get('/me', async (req, res) => {
     let name = 'Utilisateur';
     let initials = 'U';
 
-    if (user.role === 'PROFESSEUR' || user.role === 'RESPONSABLE_PEDAGOGIQUE') {
+    if (user.role === 'PROFESSEUR') {
       if (user.professeur) {
         name = `${user.professeur.prenom} ${user.professeur.nom}`;
         initials = `${user.professeur.prenom[0]}${user.professeur.nom[0]}`.toUpperCase();
       } else {
-        name = 'Responsable Pédagogique';
-        initials = 'RP';
+        name = 'Professeur';
+        initials = 'PR';
       }
     } else if (user.role === 'ASSISTANT') {
       if (user.assistant) {
@@ -125,9 +128,6 @@ router.get('/me', async (req, res) => {
         name = 'Assistant TP';
         initials = 'AS';
       }
-    } else if (user.role === 'SERVICE_ADMINISTRATIF') {
-      name = 'Service Administratif';
-      initials = 'SA';
     } else if (user.role === 'ADMIN') {
       name = 'Administrateur';
       initials = 'AD';
@@ -136,6 +136,7 @@ router.get('/me', async (req, res) => {
     res.json({
       id: user.id,
       email: user.email,
+      login: user.login,
       role: user.role.toLowerCase(),
       name,
       initials,

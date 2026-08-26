@@ -16,6 +16,7 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique @db.VarChar(255)
+  login     String?  @unique @db.VarChar(50) // Identifiant de connexion unique
   password  String   @db.VarChar(255)
   role      Role     @default(ASSISTANT)
   createdAt DateTime @default(now())
@@ -31,10 +32,8 @@ model User {
 
 enum Role {
   ADMIN
-  RESPONSABLE_PEDAGOGIQUE
   PROFESSEUR
   ASSISTANT
-  SERVICE_ADMINISTRATIF
 }
 
 // ===========================
@@ -58,17 +57,18 @@ model Professeur {
 // ASSISTANTS
 // ===========================
 model Assistant {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique
-  nom         String    @db.VarChar(100)
-  prenom      String    @db.VarChar(100)
-  telephone   String?   @db.VarChar(20)
-  formation   String?   @db.VarChar(150)
-  niveau      String?   @db.VarChar(20) // M1, M2, L3, etc.
-  inscription DateTime? @db.Date
-  statut      Statut    @default(ACTIF)
-  note        String?   @db.Text
-  heuresMax   Int       @default(120)
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  nom            String    @db.VarChar(100)
+  prenom         String    @db.VarChar(100)
+  deuxiemePrenom String?   @db.VarChar(100) // Deuxième prénom pour le login
+  telephone      String?   @db.VarChar(20)
+  formation      String?   @db.VarChar(150)
+  niveau         String?   @db.VarChar(20) // M1, M2, L3, etc.
+  inscription    DateTime? @db.Date
+  statut         Statut    @default(ACTIF)
+  note           String?   @db.Text
+  heuresMax      Int       @default(120)
 
   user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   matieres       AssistantMatiere[]
@@ -92,6 +92,7 @@ model Candidature {
   id             Int               @id @default(autoincrement())
   nom            String            @db.VarChar(100)
   prenom         String            @db.VarChar(100)
+  deuxiemePrenom String?           @db.VarChar(100) // Deuxième prénom pour le login
   email          String            @db.VarChar(255)
   telephone      String?           @db.VarChar(20)
   formation      String            @db.VarChar(150)

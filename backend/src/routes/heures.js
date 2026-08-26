@@ -32,7 +32,7 @@ async function logPedagogicalAction(user, action, objet, details) {
 // GET /api/heures/validation
 // List all submitted hours
 // =====================
-router.get('/validation', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN', 'SERVICE_ADMINISTRATIF'), async (req, res) => {
+router.get('/validation', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
     try {
         const { statut } = req.query;
 
@@ -89,7 +89,7 @@ router.get('/validation', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', '
 // =====================
 // PATCH /api/heures/validation/:id/valider
 // =====================
-router.patch('/validation/:id/valider', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.patch('/validation/:id/valider', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
     try {
         const affectationId = parseInt(req.params.id);
         const { commentaire } = req.body;
@@ -142,7 +142,7 @@ router.patch('/validation/:id/valider', requireRole('RESPONSABLE_PEDAGOGIQUE', '
 // =====================
 // PATCH /api/heures/validation/:id/refuser
 // =====================
-router.patch('/validation/:id/refuser', requireRole('RESPONSABLE_PEDAGOGIQUE', 'PROFESSEUR', 'ADMIN'), async (req, res) => {
+router.patch('/validation/:id/refuser', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
     try {
         const affectationId = parseInt(req.params.id);
         const { commentaire } = req.body;

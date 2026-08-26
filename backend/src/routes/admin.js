@@ -59,9 +59,9 @@ router.post('/users', async (req, res) => {
             return res.status(400).json({ error: 'Email, mot de passe et rôle requis.' });
         }
 
-        const validRoles = ['ADMIN', 'RESPONSABLE_PEDAGOGIQUE', 'ASSISTANT', 'SERVICE_ADMINISTRATIF'];
+        const validRoles = ['ADMIN', 'PROFESSEUR', 'ASSISTANT'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({ error: 'Rôle invalide.' });
+            return res.status(400).json({ error: 'Rôle invalide. Valeurs acceptées : ADMIN, PROFESSEUR, ASSISTANT.' });
         }
 
         const existing = await prisma.user.findUnique({ where: { email } });
@@ -86,7 +86,7 @@ router.post('/users', async (req, res) => {
                     heuresMax: 120,
                 },
             };
-        } else if ((role === 'RESPONSABLE_PEDAGOGIQUE' || role === 'PROFESSEUR') && nom && prenom) {
+        } else if (role === 'PROFESSEUR' && nom && prenom) {
             createData.professeur = {
                 create: {
                     nom,
@@ -126,9 +126,9 @@ router.patch('/users/:id/role', async (req, res) => {
         const userId = parseInt(req.params.id);
         const { role } = req.body;
 
-        const validRoles = ['ADMIN', 'RESPONSABLE_PEDAGOGIQUE', 'ASSISTANT', 'SERVICE_ADMINISTRATIF'];
+        const validRoles = ['ADMIN', 'PROFESSEUR', 'ASSISTANT'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({ error: 'Rôle invalide.' });
+            return res.status(400).json({ error: 'Rôle invalide. Valeurs acceptées : ADMIN, PROFESSEUR, ASSISTANT.' });
         }
 
         const user = await prisma.user.update({
