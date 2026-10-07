@@ -59,11 +59,25 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
 
   let menu = assistantMenu;
-  if (user?.role === 'admin') {
+  const isAnyAdmin = ['admin', 'super_admin', 'admin_informatique', 'admin_electronique'].includes(user?.role || '');
+  if (isAnyAdmin) {
     menu = adminMenu;
   } else if (user?.role === 'professeur') {
     menu = professeurMenu;
   }
+
+  const getRoleLabel = () => {
+    switch (user?.role) {
+      case 'super_admin': return 'Super Admin';
+      case 'admin_informatique': return 'Admin Info';
+      case 'admin_electronique': return 'Admin Électro';
+      case 'admin': return 'Administrateur';
+      case 'professeur': return 'Professeur';
+      case 'responsable_pedagogique': return 'Responsable Pédagogique';
+      case 'service_administratif': return 'Service Administratif';
+      default: return 'Assistant TP';
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -97,8 +111,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div className="px-3.5 py-2 border-b border-sidebar-border/40 bg-white/5 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
-            {user?.role === 'professeur' ? 'Professeur' :
-              user?.role === 'admin' ? 'Administrateur' : 'Assistant TP'}
+            {getRoleLabel()}
           </span>
         </div>
       )}

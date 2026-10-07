@@ -2,7 +2,15 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-export type UserRole = 'admin' | 'professeur' | 'assistant';
+export type UserRole =
+  | 'super_admin'
+  | 'admin_informatique'
+  | 'admin_electronique'
+  | 'admin'
+  | 'professeur'
+  | 'assistant'
+  | 'responsable_pedagogique'
+  | 'service_administratif';
 
 export interface User {
   id?: number;
@@ -11,6 +19,8 @@ export interface User {
   name: string;
   role: UserRole;
   initials: string;
+  specialties?: string[];
+  assistantId?: number;
 }
 
 interface AuthContextType {
@@ -62,6 +72,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       name: userData.name,
       role: userData.role as UserRole,
       initials: userData.initials,
+      specialties: userData.specialties || [],
+      assistantId: userData.assistantId,
     };
 
     setUser(fullUser);

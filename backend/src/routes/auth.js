@@ -26,7 +26,11 @@ router.post('/login', async (req, res) => {
       },
       include: {
         professeur: true,
-        assistant: true,
+        assistant: {
+          include: {
+            specialties: true,
+          },
+        },
       },
     });
 
@@ -50,6 +54,7 @@ router.post('/login', async (req, res) => {
     // Nom & Initiales
     let name = 'Utilisateur';
     let initials = 'U';
+    let specialties = [];
 
     if (user.role === 'PROFESSEUR') {
       if (user.professeur) {
@@ -63,13 +68,20 @@ router.post('/login', async (req, res) => {
       if (user.assistant) {
         name = `${user.assistant.prenom} ${user.assistant.nom}`;
         initials = `${user.assistant.prenom[0]}${user.assistant.nom[0]}`.toUpperCase();
+        specialties = user.assistant.specialties.map(s => s.specialty);
       } else {
         name = 'Assistant TP';
         initials = 'AS';
       }
-    } else if (user.role === 'ADMIN') {
-      name = 'Administrateur';
-      initials = 'AD';
+    } else if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
+      name = 'Super Administrateur';
+      initials = 'SA';
+    } else if (user.role === 'ADMIN_INFORMATIQUE') {
+      name = 'Admin Informatique';
+      initials = 'AI';
+    } else if (user.role === 'ADMIN_ELECTRONIQUE') {
+      name = 'Admin Électronique';
+      initials = 'AE';
     }
 
     res.json({
@@ -81,6 +93,7 @@ router.post('/login', async (req, res) => {
         role: user.role.toLowerCase(),
         name,
         initials,
+        specialties,
       },
     });
   } catch (error) {
@@ -104,13 +117,17 @@ router.get('/me', async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { professeur: true, assistant: true },
+      include: {
+        professeur: true,
+        assistant: { include: { specialties: true } },
+      },
     });
 
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
 
     let name = 'Utilisateur';
     let initials = 'U';
+    let specialties = [];
 
     if (user.role === 'PROFESSEUR') {
       if (user.professeur) {
@@ -124,13 +141,20 @@ router.get('/me', async (req, res) => {
       if (user.assistant) {
         name = `${user.assistant.prenom} ${user.assistant.nom}`;
         initials = `${user.assistant.prenom[0]}${user.assistant.nom[0]}`.toUpperCase();
+        specialties = user.assistant.specialties.map(s => s.specialty);
       } else {
         name = 'Assistant TP';
         initials = 'AS';
       }
-    } else if (user.role === 'ADMIN') {
-      name = 'Administrateur';
-      initials = 'AD';
+    } else if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
+      name = 'Super Administrateur';
+      initials = 'SA';
+    } else if (user.role === 'ADMIN_INFORMATIQUE') {
+      name = 'Admin Informatique';
+      initials = 'AI';
+    } else if (user.role === 'ADMIN_ELECTRONIQUE') {
+      name = 'Admin Électronique';
+      initials = 'AE';
     }
 
     res.json({
@@ -140,6 +164,7 @@ router.get('/me', async (req, res) => {
       role: user.role.toLowerCase(),
       name,
       initials,
+      specialties,
     });
   } catch (error) {
     console.error('[AUTH/ME]', error);

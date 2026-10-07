@@ -16,12 +16,27 @@ router.get('/stats', async (req, res) => {
     // Standardize role checks
     const normalizedRole = role.toUpperCase();
 
-    if (normalizedRole === 'RESPONSABLE_PEDAGOGIQUE' || normalizedRole === 'PROFESSEUR' || normalizedRole === 'ADMIN') {
+    if (normalizedRole === 'RESPONSABLE_PEDAGOGIQUE' || normalizedRole === 'PROFESSEUR' || normalizedRole.includes('ADMIN')) {
       // === Dashboard Pédagogique ===
-      const candidaturesAttente = await prisma.candidature.count({ where: { statut: 'EN_ATTENTE' } });
-      const assistantsActifs = await prisma.assistant.count({ where: { statut: 'ACTIF' } });
-      const seancesProgrammees = await prisma.seance.count({ where: { statut: 'PLANIFIEE' } });
-      const seancesTerminees = await prisma.seance.count({ where: { statut: 'TERMINEE' } });
+      const specialtyFilter = req.query.specialty;
+      let candWhere = { statut: 'EN_ATTENTE' };
+      let asstWhere = { statut: 'ACTIF' };
+      let seanceWhere = {};
+
+      if (normalizedRole === 'ADMIN_INFORMATIQUE' || specialtyFilter === 'INFORMATIQUE') {
+        candWhere.specialties = { some: { specialty: 'INFORMATIQUE' } };
+        asstWhere.specialties = { some: { specialty: 'INFORMATIQUE' } };
+        seanceWhere.specialite = 'INFORMATIQUE';
+      } else if (normalizedRole === 'ADMIN_ELECTRONIQUE' || specialtyFilter === 'ELECTRONIQUE') {
+        candWhere.specialties = { some: { specialty: 'ELECTRONIQUE' } };
+        asstWhere.specialties = { some: { specialty: 'ELECTRONIQUE' } };
+        seanceWhere.specialite = 'ELECTRONIQUE';
+      }
+
+      const candidaturesAttente = await prisma.candidature.count({ where: candWhere });
+      const assistantsActifs = await prisma.assistant.count({ where: asstWhere });
+      const seancesProgrammees = await prisma.seance.count({ where: { ...seanceWhere, statut: 'PLANIFIEE' } });
+      const seancesTerminees = await prisma.seance.count({ where: { ...seanceWhere, statut: 'TERMINEE' } });
 
       const heuresValideesAgg = await prisma.affectation.aggregate({
         where: { statutHeures: 'VALIDEE' },

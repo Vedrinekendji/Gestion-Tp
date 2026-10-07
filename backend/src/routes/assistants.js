@@ -9,12 +9,27 @@ router.use(authMiddleware);
 
 // =====================
 // GET /api/assistants
+// Server-side isolation par spécialité (EXIGENCE REQUIS 5)
 // =====================
 router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
+    const role = req.user.role.toUpperCase();
+    const { specialty } = req.query;
+
+    const where = {};
+    if (role === 'ADMIN_INFORMATIQUE') {
+      where.specialties = { some: { specialty: 'INFORMATIQUE' } };
+    } else if (role === 'ADMIN_ELECTRONIQUE') {
+      where.specialties = { some: { specialty: 'ELECTRONIQUE' } };
+    } else if (specialty && specialty !== 'TOUTES') {
+      where.specialties = { some: { specialty: specialty } };
+    }
+
     const assistants = await prisma.assistant.findMany({
+      where,
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, login: true } },
+        specialties: true,
         matieres: {
           include: { matiere: true },
         },
@@ -38,7 +53,8 @@ router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
         nom: `${a.prenom} ${a.nom}`,
         prenom: a.prenom,
         nomFamille: a.nom,
-        email: a.user.email,
+        email: a.user?.email,
+        login: a.user?.login,
         telephone: a.telephone,
         formation: a.formation,
         niveau: a.niveau,
@@ -49,6 +65,7 @@ router.get('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
         heuresAttente,
         heuresTotal: heuresValidees + heuresAttente,
         heuresMax: a.heuresMax,
+        specialties: a.specialties.map(s => s.specialty),
         matieres: a.matieres.map(am => am.matiere.code),
       };
     });
@@ -68,7 +85,8 @@ router.get('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
     const assistant = await prisma.assistant.findUnique({
       where: { id: parseInt(req.params.id) },
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, login: true } },
+        specialties: true,
         matieres: { include: { matiere: true } },
         affectations: { include: { seance: { include: { matiere: true } } } },
         disponibilites: true,
@@ -77,7 +95,10 @@ router.get('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 
     if (!assistant) return res.status(404).json({ error: 'Assistant introuvable.' });
 
-    res.json(assistant);
+    res.json({
+      ...assistant,
+      specialties: assistant.specialties.map(s => s.specialty),
+    });
   } catch (error) {
     console.error('[ASSISTANTS/GET/:id]', error);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
@@ -89,7 +110,7 @@ router.get('/:id', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
 // =====================
 router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
   try {
-    const { nom, prenom, email, telephone, note, formation, niveau, matieres } = req.body;
+    const { nom, prenom, email, telephone, note, formation, niveau, matieres, specialties: inputSpecialties } = req.body;
 
     if (!nom || !prenom || !email) {
       return res.status(400).json({ error: 'Nom, prénom et email sont requis.' });
@@ -99,6 +120,10 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
     if (existing) {
       return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
     }
+
+    const validSpecialties = ['INFORMATIQUE', 'ELECTRONIQUE'];
+    let chosenSpecialties = Array.isArray(inputSpecialties) ? inputSpecialties.filter(s => validSpecialties.includes(s)) : [];
+    if (chosenSpecialties.length === 0) chosenSpecialties = ['INFORMATIQUE'];
 
     const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.default.hash('asst123', 10);
@@ -119,10 +144,13 @@ router.post('/', requireRole('PROFESSEUR', 'ADMIN'), async (req, res) => {
             statut: 'ACTIF',
             note: note || null,
             heuresMax: 120,
+            specialties: {
+              create: chosenSpecialties.map(sp => ({ specialty: sp }))
+            },
           },
         },
       },
-      include: { assistant: true },
+      include: { assistant: { include: { specialties: true } } },
     });
 
     if (matieres && matieres.length > 0) {

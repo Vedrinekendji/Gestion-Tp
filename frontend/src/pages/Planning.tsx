@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { FiDownload, FiCheckCircle, FiAlertTriangle, FiCalendar, FiUser, FiSearch, FiList, FiX } from 'react-icons/fi';
+import { FiDownload, FiCheckCircle, FiAlertTriangle, FiCalendar, FiUser, FiSearch, FiList, FiX, FiEdit2, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -20,7 +20,15 @@ interface Seance {
     nombreAssistantsRequis: number;
     placesPrises: number;
     professeur: string;
-    affectations: { id: number; assistantId: number; nom: string; email?: string; statut: string }[];
+    professeurId?: number;
+    affectations: {
+        id: number;
+        assistantId: number;
+        nom: string;
+        email?: string;
+        statut: string;
+        statutPresence?: string;
+    }[];
 }
 
 interface LogHistorique {
@@ -28,10 +36,11 @@ interface LogHistorique {
     seanceId?: number;
     action: string;
     dateAction: string;
-    ancienStatut: string | null;
-    nouveauStatut: string | null;
-    effectuePar: string | null;
-    commentaire: string | null;
+    ancienStatut?: string | null;
+    nouveauStatut?: string | null;
+    effectuePar?: string | null;
+    objet?: string | null;
+    commentaire?: string | null;
     seance?: { matiere?: { nom: string }; groupe?: string; date?: string };
 }
 
@@ -59,6 +68,16 @@ export default function Planning() {
     // Modals
     const [showImportModal, setShowImportModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [editingSeance, setEditingSeance] = useState<Seance | null>(null);
+
+    // Form state for Seance editing
+    const [editForm, setEditForm] = useState({
+        salle: '',
+        date: '',
+        heureDebut: '',
+        heureFin: '',
+    });
+    const [submittingEdit, setSubmittingEdit] = useState(false);
 
     // Import State
     const [csvText, setCsvText] = useState('');
@@ -139,30 +158,85 @@ export default function Planning() {
 
     const sortedDays = useMemo(() => Object.keys(grouped).sort(), [grouped]);
 
+    // Open Edit Modal
+    const handleStartEdit = (seance: Seance) => {
+        setEditingSeance(seance);
+        setEditForm({
+            salle: seance.salle || '',
+            date: new Date(seance.date).toISOString().split('T')[0],
+            heureDebut: seance.heureDebut,
+            heureFin: seance.heureFin,
+        });
+    };
+
+    // Save Seance Edit
+    const handleSaveEdit = async () => {
+        if (!editingSeance) return;
+        setSubmittingEdit(true);
+        setFeedback(null);
+        try {
+            const res = await window.fetch(`${API_URL}/api/seances/${editingSeance.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(editForm),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur lors de la mise à jour.');
+
+            setFeedback({ message: 'Séance mise à jour. Les notifications d\'e-mail ciblées ont été générées.', type: 'success' });
+            setEditingSeance(null);
+            await fetchSeances();
+        } catch (err: any) {
+            setFeedback({ message: err.message, type: 'error' });
+        } finally {
+            setSubmittingEdit(false);
+        }
+    };
+
+    // Handle Presence Validation by Professor/Admin
+    const handleValidatePresence = async (seanceId: number, assistantId: number, statutPresence: 'PRESENT' | 'ABSENT') => {
+        try {
+            const res = await window.fetch(`${API_URL}/api/seances/${seanceId}/presence/${assistantId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ statutPresence }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur lors de la validation.');
+
+            setFeedback({ message: data.message || `Présence enregistrée : ${statutPresence}`, type: 'success' });
+            await fetchSeances();
+        } catch (err: any) {
+            setFeedback({ message: err.message, type: 'error' });
+        }
+    };
+
     // Handle CSV Import
     const handleImportSubmit = async () => {
         if (!csvText.trim()) return;
         setImporting(true);
         setFeedback(null);
         try {
-            // Parse CSV / Tab-separated lines
             const lines = csvText.trim().split('\n').map(l => l.trim()).filter(Boolean);
             const rows = [];
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
-                // detect separator: tab or semicolon or comma
                 let parts = line.split('\t');
                 if (parts.length < 3) parts = line.split(';');
                 if (parts.length < 3) parts = line.split(',');
 
                 if (parts.length >= 4) {
-                    // If first row is header, skip
                     if (i === 0 && (parts[0].toLowerCase().includes('prof') || parts[0].toLowerCase().includes('nom') || parts[2].toLowerCase().includes('matiere'))) {
                         continue;
                     }
 
-                    // Expected: Prof, Salle, Groupe, Matiere, Jour, Date, HeureDebut, HeureFin
                     const professeurNom = parts[0] ? parts[0].trim() : 'Professeur Inconnu';
                     const salle = parts[1] ? parts[1].trim() : 'Salle TP';
                     const groupe = parts[2] ? parts[2].trim() : 'Gr1';
@@ -171,7 +245,6 @@ export default function Planning() {
                     const heureDebut = parts[6] ? parts[6].trim() : '08:30';
                     const heureFin = parts[7] ? parts[7].trim() : '10:30';
 
-                    // Format Date dd/mm/yyyy -> yyyy-mm-dd
                     let formattedDate = dateRaw;
                     if (dateRaw.includes('/')) {
                         const [d, m, y] = dateRaw.split('/');
@@ -192,7 +265,7 @@ export default function Planning() {
             }
 
             if (rows.length === 0) {
-                throw new Error('Aucune ligne valide reconnue. Formats supportés : CSV (tabulation, point-virgule ou virgule).');
+                throw new Error('Aucune ligne valide reconnue.');
             }
 
             const res = await window.fetch(`${API_URL}/api/seances/import`, {
@@ -222,13 +295,13 @@ export default function Planning() {
     const handleLibererAssistant = async (seanceId: number, assistantId: number) => {
         if (!window.confirm('Voulez-vous vraiment désaffecter cet assistant de ce créneau ?')) return;
         try {
-            const res = await window.fetch(`${API_URL}/api/seances/${seanceId}/annuler-reservation`, {
+            const res = await window.fetch(`${API_URL}/api/seances/${seanceId}/desister`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ assistantId, motif: 'Libération administrative par l\'administrateur.' }),
+                body: JSON.stringify({ assistantId, motif: 'Libération par responsable.' }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur lors de la libération.');
@@ -258,7 +331,7 @@ export default function Planning() {
                 <div>
                     <h2 className="text-[24px] font-bold text-text-primary tracking-tight">Gestion Globale du Planning TP</h2>
                     <p className="text-[13.5px] text-text-secondary mt-1">
-                        Supervisez les créneaux de TP, importez les plannings et gérez les affectations des assistants.
+                        Supervisez les créneaux, validez la présence des assistants et modifiez les plannings avec notifications automatiques.
                     </p>
                 </div>
 
@@ -397,6 +470,12 @@ export default function Planning() {
                                                                 {s.matiereCode}
                                                             </span>
                                                             <span className="text-[11px] text-text-muted font-medium">• {s.type}</span>
+                                                            <button
+                                                                onClick={() => handleStartEdit(s)}
+                                                                className="text-primary hover:text-primary-hover bg-primary/10 px-2 py-0.5 rounded text-[11px] font-semibold border border-primary/20 flex items-center gap-1 cursor-pointer"
+                                                            >
+                                                                <FiEdit2 size={11} /> Modifier
+                                                            </button>
                                                         </div>
                                                         <div className="text-[12.5px] text-text-secondary mt-0.5">
                                                             {s.groupe} • Salle: <span className="font-medium text-text-primary">{s.salle || 'Non définie'}</span>
@@ -423,19 +502,47 @@ export default function Planning() {
                                                         </span>
                                                     </div>
 
-                                                    {/* List of affectations with liberation button */}
+                                                    {/* List of affectations with Presence Validation & Liberation */}
                                                     {s.affectations.length > 0 && (
-                                                        <div className="flex flex-col gap-1">
+                                                        <div className="flex flex-col gap-1.5">
                                                             {s.affectations.map(af => (
-                                                                <div key={af.id} className="flex items-center gap-2 bg-content-bg px-2.5 py-1 rounded-lg border border-border text-[12px]">
-                                                                    <span className="font-medium text-text-primary flex items-center gap-1"><FiUser className="text-text-muted" /> {af.nom}</span>
-                                                                    <button
-                                                                        onClick={() => handleLibererAssistant(s.id, af.assistantId)}
-                                                                        title="Libérer la place cet assistant"
-                                                                        className="text-rose-600 hover:text-rose-700 bg-transparent border-none cursor-pointer font-bold ml-1 text-[13px] inline-flex items-center"
-                                                                    >
-                                                                        <FiX />
-                                                                    </button>
+                                                                <div key={af.id} className="flex items-center gap-2 bg-content-bg px-3 py-1.5 rounded-lg border border-border text-[12px] flex-wrap">
+                                                                    <span className="font-semibold text-text-primary flex items-center gap-1">
+                                                                        <FiUser className="text-text-muted" /> {af.nom}
+                                                                    </span>
+
+                                                                    {/* Presence Controls */}
+                                                                    <div className="flex items-center gap-1 ml-auto">
+                                                                        <button
+                                                                            onClick={() => handleValidatePresence(s.id, af.assistantId, 'PRESENT')}
+                                                                            title="Valider la PRÉSENCE de l'assistant"
+                                                                            className={`px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1 border cursor-pointer ${af.statutPresence === 'PRESENT'
+                                                                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                                                                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+                                                                                }`}
+                                                                        >
+                                                                            <FiUserCheck size={12} /> Présent
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={() => handleValidatePresence(s.id, af.assistantId, 'ABSENT')}
+                                                                            title="Marquer l'assistant comme ABSENT"
+                                                                            className={`px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1 border cursor-pointer ${af.statutPresence === 'ABSENT'
+                                                                                ? 'bg-rose-600 text-white border-rose-600'
+                                                                                : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'
+                                                                                }`}
+                                                                        >
+                                                                            <FiUserX size={12} /> Absent
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={() => handleLibererAssistant(s.id, af.assistantId)}
+                                                                            title="Libérer cet assistant (Désaffecter)"
+                                                                            className="text-rose-600 hover:text-rose-700 bg-transparent border-none cursor-pointer font-bold ml-1 text-[13px] inline-flex items-center"
+                                                                        >
+                                                                            <FiX />
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -455,6 +562,78 @@ export default function Planning() {
                             <p className="text-[14px] text-text-muted">Aucune séance ne correspond aux critères sélectionnés.</p>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* EDIT SEANCE MODAL WITH WARNING */}
+            {editingSeance && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                    <div className="bg-card-bg border border-border rounded-2xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-border pb-3">
+                            <h3 className="text-[17px] font-bold text-text-primary">Modifier la Séance — {editingSeance.matiere} ({editingSeance.groupe})</h3>
+                            <button onClick={() => setEditingSeance(null)} className="border-none bg-transparent cursor-pointer text-text-muted hover:text-text-primary text-lg"><FiX /></button>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <label className="text-[12.5px] font-semibold text-text-secondary block mb-1">Salle :</label>
+                                <input
+                                    type="text"
+                                    value={editForm.salle}
+                                    onChange={e => setEditForm({ ...editForm, salle: e.target.value })}
+                                    className="w-full p-2 bg-content-bg border border-border rounded-lg text-[13px] text-text-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[12.5px] font-semibold text-text-secondary block mb-1">Date :</label>
+                                <input
+                                    type="date"
+                                    value={editForm.date}
+                                    onChange={e => setEditForm({ ...editForm, date: e.target.value })}
+                                    className="w-full p-2 bg-content-bg border border-border rounded-lg text-[13px] text-text-primary"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[12.5px] font-semibold text-text-secondary block mb-1">Heure début :</label>
+                                    <input
+                                        type="time"
+                                        value={editForm.heureDebut}
+                                        onChange={e => setEditForm({ ...editForm, heureDebut: e.target.value })}
+                                        className="w-full p-2 bg-content-bg border border-border rounded-lg text-[13px] text-text-primary"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[12.5px] font-semibold text-text-secondary block mb-1">Heure fin :</label>
+                                    <input
+                                        type="time"
+                                        value={editForm.heureFin}
+                                        onChange={e => setEditForm({ ...editForm, heureFin: e.target.value })}
+                                        className="w-full p-2 bg-content-bg border border-border rounded-lg text-[13px] text-text-primary"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* WARNING DISCLAIMER ON NOTIFICATIONS */}
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-[12.5px] text-amber-700 flex items-start gap-2 mt-1">
+                                <FiAlertTriangle className="shrink-0 mt-0.5 text-lg" />
+                                <span>
+                                    <strong>Attention :</strong> Cette modification entraînera l'envoi d'une notification par e-mail aux personnes concernées (professeur et assistants affectés).
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                            <button onClick={() => setEditingSeance(null)} className="px-4 py-2 bg-content-bg hover:bg-border text-text-primary rounded-xl text-[13px] font-medium border border-border cursor-pointer">
+                                Annuler
+                            </button>
+                            <button onClick={handleSaveEdit} disabled={submittingEdit} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-[13px] font-semibold border-none cursor-pointer">
+                                {submittingEdit ? 'Enregistrement...' : 'Confirmer la modification'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -481,7 +660,7 @@ export default function Planning() {
                                 rows={10}
                                 value={csvText}
                                 onChange={e => setCsvText(e.target.value)}
-                                placeholder={`BENBEKHOUCHE SANA\tSalle EM216\tIng3 Gr05\tInitiation Réseaux APP\tjeudi\t26/03/2026\t14:00:00\t16:00:00\nMENTA ISSA\tSalle EM216\tIng3 Gr05\tLINUX APP\tjeudi\t26/03/2026\t16:15:00\t18:15:00`}
+                                placeholder={`BENBEKHOUCHE SANA\tSalle EM216\tIng3 Gr05\tInitiation Réseaux APP\tjeudi\t26/03/2026\t14:00:00\t16:00:00`}
                                 className="w-full p-3 font-mono text-[12px] bg-content-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary"
                             />
                         </div>
@@ -512,7 +691,7 @@ export default function Planning() {
                     <div className="bg-card-bg border border-border rounded-2xl p-6 max-w-4xl w-full shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-border pb-3">
                             <h3 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
-                                <FiList className="text-primary" /> Historique des Actions & Réservations (Audit Trail)
+                                <FiList className="text-primary" /> Historique des Actions & Audit Trail (Désistements, Salle, Dates, Présences)
                             </h3>
                             <button onClick={() => setShowHistoryModal(false)} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer text-lg flex items-center justify-center"><FiX /></button>
                         </div>
@@ -526,9 +705,9 @@ export default function Planning() {
                                         <tr className="bg-content-bg border-b border-border font-semibold text-text-secondary uppercase tracking-wider text-[11px]">
                                             <th className="py-2.5 px-3">Date Action</th>
                                             <th className="py-2.5 px-3">Action</th>
-                                            <th className="py-2.5 px-3">Séance / Matière</th>
+                                            <th className="py-2.5 px-3">Objet</th>
                                             <th className="py-2.5 px-3">Effectué par</th>
-                                            <th className="py-2.5 px-3">Commentaire</th>
+                                            <th className="py-2.5 px-3">Détails / Audit</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border text-text-primary">
@@ -543,9 +722,9 @@ export default function Planning() {
                                                         {new Date(log.dateAction).toLocaleString('fr-FR')}
                                                     </td>
                                                     <td className="py-2.5 px-3 font-bold">
-                                                        <span className={`px-2 py-0.5 rounded text-[10.5px] ${log.action === 'RESERVATION'
+                                                        <span className={`px-2 py-0.5 rounded text-[10.5px] ${log.action === 'RESERVATION' || log.action === 'VALIDATION_PRESENCE'
                                                             ? 'bg-emerald-500/10 text-emerald-600'
-                                                            : log.action === 'ANNULATION' || log.action === 'LIBERATION_ADMIN'
+                                                            : log.action === 'DESISTEMENT_CRENEAU' || log.action === 'ANNULATION'
                                                                 ? 'bg-rose-500/10 text-rose-600'
                                                                 : 'bg-primary/10 text-primary'
                                                             }`}>
@@ -553,7 +732,7 @@ export default function Planning() {
                                                         </span>
                                                     </td>
                                                     <td className="py-2.5 px-3 font-medium">
-                                                        {log.seance?.matiere?.nom || 'Séance #' + log.seanceId} ({log.seance?.groupe || ''})
+                                                        {log.objet || '—'}
                                                     </td>
                                                     <td className="py-2.5 px-3 text-text-secondary">{log.effectuePar || 'Système'}</td>
                                                     <td className="py-2.5 px-3 text-text-muted italic">{log.commentaire || '—'}</td>

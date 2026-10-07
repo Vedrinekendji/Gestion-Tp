@@ -1,7 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import prisma from './src/lib/prisma.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Catch unhandled errors gracefully
 process.on('uncaughtException', (err) => {
@@ -39,6 +44,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:3000'], credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Servir les fichiers uploadés (CV)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);

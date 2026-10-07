@@ -55,11 +55,12 @@ export default function Dashboard() {
   }
 
   const role = user?.role;
+  const isAdminOrProf = ['admin', 'super_admin', 'admin_informatique', 'admin_electronique', 'professeur', 'responsable_pedagogique'].includes(role || '');
 
   // ==========================================
-  // DASHBOARD RESPONSABLE PÉDAGOGIQUE
+  // DASHBOARD RESPONSABLE PÉDAGOGIQUE & ADMIN
   // ==========================================
-  if (role === 'responsable_pedagogique' || role === 'professeur') {
+  if (isAdminOrProf) {
     const { metrics, charts, recent } = data || {};
 
     return (
@@ -211,7 +212,7 @@ export default function Dashboard() {
                     <p className="text-xs text-slate-500">{c.formation} • {c.niveau}</p>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${c.statut === 'EN_ATTENTE' ? 'bg-amber-100 text-amber-700' :
-                      c.statut === 'ACCEPTEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                    c.statut === 'ACCEPTEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                     }`}>
                     {c.statut}
                   </span>

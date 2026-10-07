@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { FiList, FiCalendar, FiCheckCircle, FiClock, FiMapPin, FiUsers, FiAlertTriangle, FiX } from 'react-icons/fi';
+import { FiList, FiCalendar, FiCheckCircle, FiClock, FiMapPin, FiUsers, FiAlertTriangle, FiX, FiUserCheck } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -22,6 +22,7 @@ interface MonAffectation {
   type: string;
   niveau: string | null;
   statut: string;
+  statutPresence: string;
   heuresCount: number;
 }
 
@@ -29,7 +30,7 @@ const STATUT_LABELS: Record<string, { label: string; bg: string; color: string }
   EN_ATTENTE: { label: 'En attente', bg: 'rgba(245, 158, 11, 0.12)', color: '#d97706' },
   VALIDEE: { label: 'Validée', bg: 'rgba(16, 185, 129, 0.12)', color: '#059669' },
   REFUSEE: { label: 'Refusée', bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626' },
-  ANNULEE: { label: 'Annulée', bg: 'rgba(107, 114, 128, 0.12)', color: '#6b7280' },
+  ANNULEE: { label: 'Annulée / Désisté', bg: 'rgba(107, 114, 128, 0.12)', color: '#6b7280' },
 };
 
 export default function MesSeances() {
@@ -40,7 +41,7 @@ export default function MesSeances() {
   const [filter, setFilter] = useState<'toutes' | 'avenir' | 'passees'>('avenir');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
-  // Cancel Modal
+  // Cancel / Désistement Modal
   const [cancelModalItem, setCancelModalItem] = useState<MonAffectation | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -103,8 +104,6 @@ export default function MesSeances() {
     const eventId = Number(info.event.id);
     const affectation = filtered.find(a => a.id === eventId);
     if (affectation) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const isFuture = new Date(affectation.date) >= today;
       const canCancel = isFuture && affectation.statut !== 'ANNULEE' && affectation.statut !== 'REFUSEE';
       if (canCancel) {
@@ -113,23 +112,23 @@ export default function MesSeances() {
     }
   };
 
-  const handleCancelReservation = async () => {
+  const handleDesister = async () => {
     if (!cancelModalItem) return;
     setSubmitting(true);
     try {
       const seanceId = cancelModalItem.seanceId || cancelModalItem.id;
-      const res = await fetch(`${API_URL}/api/seances/${seanceId}/annuler-reservation`, {
+      const res = await fetch(`${API_URL}/api/seances/${seanceId}/desister`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ motif: 'Annulé par l\'assistant depuis Mes séances' }),
+        body: JSON.stringify({ motif: 'Désistement volontaire depuis l\'interface assistant Mes séances' }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'annulation.');
+      if (!res.ok) throw new Error(data.error || 'Erreur lors du désistement.');
 
-      setFeedback({ message: 'Réservation annulée avec succès.', type: 'success' });
+      setFeedback({ message: 'Désistement effectué avec succès. Le créneau a été libéré.', type: 'success' });
       setCancelModalItem(null);
       await fetchAffectations();
     } catch (err: any) {
@@ -195,7 +194,7 @@ export default function MesSeances() {
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{valideesCount}</div>
-            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">Séances validées</div>
+            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">Séances réservées</div>
           </div>
         </div>
 
@@ -205,7 +204,7 @@ export default function MesSeances() {
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{enAttenteCount}</div>
-            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">En attente de validation</div>
+            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">En attente</div>
           </div>
         </div>
 
@@ -215,7 +214,7 @@ export default function MesSeances() {
           </div>
           <div>
             <div className="text-[24px] font-bold text-text-primary leading-none">{heuresTotal}h</div>
-            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">Heures d'encadrement validées</div>
+            <div className="text-[12.5px] text-text-secondary mt-1 font-medium">Heures d'encadrement totales</div>
           </div>
         </div>
       </div>
@@ -333,6 +332,7 @@ export default function MesSeances() {
             const statutMeta = STATUT_LABELS[a.statut] || STATUT_LABELS.EN_ATTENTE;
             const isFuture = new Date(a.date) >= today;
             const canCancel = isFuture && a.statut !== 'ANNULEE' && a.statut !== 'REFUSEE';
+            const presenceStatut = a.statutPresence || 'PRESENCE_A_VALIDER';
 
             return (
               <div key={a.id} className="bg-card-bg border border-border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">
@@ -346,6 +346,16 @@ export default function MesSeances() {
                       </span>
                       <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-content-bg text-text-secondary">
                         {a.type}
+                      </span>
+
+                      {/* Badge Présence */}
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 ${presenceStatut === 'PRESENT'
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                        : presenceStatut === 'ABSENT'
+                          ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                          : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                        }`}>
+                        <FiUserCheck size={12} /> Présence: {presenceStatut === 'PRESENT' ? 'Présent' : presenceStatut === 'ABSENT' ? 'Absent' : 'À valider par prof'}
                       </span>
                     </div>
                     <div className="text-[13px] text-text-secondary mt-1 flex items-center gap-3 flex-wrap">
@@ -369,9 +379,9 @@ export default function MesSeances() {
                   {canCancel && (
                     <button
                       onClick={() => setCancelModalItem(a)}
-                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-lg text-[12.5px] font-semibold border border-rose-500/20 cursor-pointer transition-colors"
+                      className="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-lg text-[12.5px] font-semibold border border-rose-500/20 cursor-pointer transition-colors"
                     >
-                      Annuler
+                      Se désister
                     </button>
                   )}
                 </div>
@@ -393,16 +403,20 @@ export default function MesSeances() {
       {cancelModalItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-card-bg border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4">
-            <h3 className="text-[17px] font-bold text-text-primary">Confirmer l'annulation</h3>
+            <h3 className="text-[17px] font-bold text-text-primary">Confirmer le désistement</h3>
             <p className="text-[13px] text-text-secondary">
-              Voulez-vous vraiment annuler votre réservation pour <strong>{cancelModalItem.matiere}</strong> ({cancelModalItem.groupe}) le {new Date(cancelModalItem.date).toLocaleDateString('fr-FR')} ?
+              Êtes-vous sûr de vouloir vous désister de cette séance de TP ?<br />
+              <strong>{cancelModalItem.matiere}</strong> ({cancelModalItem.groupe}) le {new Date(cancelModalItem.date).toLocaleDateString('fr-FR')} de {cancelModalItem.heureDebut} à {cancelModalItem.heureFin}.
+            </p>
+            <p className="text-[12px] text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+              <FiAlertTriangle className="inline -mt-0.5 mr-1" /> Ce créneau sera immédiatement libéré et une notification par e-mail sera transmise aux assistants éligibles.
             </p>
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
               <button onClick={() => setCancelModalItem(null)} className="px-4 py-2 bg-content-bg hover:bg-border text-text-primary rounded-xl text-[13px] font-medium border border-border cursor-pointer">
-                Conserver
+                Conserver ma réservation
               </button>
-              <button onClick={handleCancelReservation} disabled={submitting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[13px] font-semibold border-none cursor-pointer">
-                {submitting ? 'Annulation...' : 'Confirmer l\'annulation'}
+              <button onClick={handleDesister} disabled={submitting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[13px] font-semibold border-none cursor-pointer">
+                {submitting ? 'Désistement...' : 'Confirmer le désistement'}
               </button>
             </div>
           </div>

@@ -9,6 +9,10 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Historique from './pages/Historique';
 
+// Pages publiques (sans authentification)
+import CandidaturePublique from './pages/CandidaturePublique';
+import CandidatureEnvoyee from './pages/CandidatureEnvoyee';
+
 // Pages Admin/Professeur
 import Candidatures from './pages/Candidatures';
 import Planning from './pages/Planning';
@@ -27,6 +31,8 @@ import Disponibilites from './pages/Disponibilites';
 import MesSeances from './pages/MesSeances';
 import PlanningDisponible from './pages/PlanningDisponible';
 
+const ADMIN_ROLES: UserRole[] = ['admin', 'super_admin', 'admin_informatique', 'admin_electronique'];
+
 // Route guard component
 function ProtectedRoute({
   children,
@@ -39,8 +45,16 @@ function ProtectedRoute({
   if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+  if (allowedRoles) {
+    const isAllowed = allowedRoles.some(role => {
+      if (role === 'admin') {
+        return ADMIN_ROLES.includes(user.role);
+      }
+      return user.role === role;
+    });
+    if (!isAllowed) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
   return <>{children}</>;
 }
@@ -53,6 +67,9 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        {/* Routes publiques accessible sans connexion */}
+        <Route path="/candidature" element={<CandidaturePublique />} />
+        <Route path="/candidature-envoyee" element={<CandidatureEnvoyee />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

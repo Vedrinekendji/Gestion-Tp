@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 
@@ -21,11 +21,7 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Email ou mot de passe incorrect.');
-      }
+      setError(err instanceof Error ? err.message : 'Email/login ou mot de passe incorrect.');
     } finally {
       setLoading(false);
     }
@@ -85,19 +81,20 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white border border-border rounded-lg p-6 shadow-md">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-text-primary">Adresse e-mail</label>
+              <label className="text-[13px] font-medium text-text-primary">Email ou identifiant de connexion</label>
               <div className="relative flex items-center">
                 <svg className="absolute left-3 text-text-muted pointer-events-none z-10" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" />
-                  <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" />
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
                 <input
-                  type="email"
+                  type="text"
                   className="w-full pl-[38px] pr-3 py-[9px] border border-border rounded-sm text-[13.5px] text-text-primary bg-white transition-all outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 placeholder:text-text-muted"
-                  placeholder="votre.email@universite.fr"
+                  placeholder="votre.email@univ.dz ou JP26D"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -139,6 +136,25 @@ export default function Login() {
                 {loading && <span className="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2"></span>}
                 {loading ? 'Connexion...' : 'Se connecter'}
               </button>
+
+              <div className="w-full flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-medium">ou</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              <Link
+                to="/candidature"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 border-primary/20 bg-primary/5 text-primary font-semibold text-[13.5px] hover:bg-primary/10 hover:border-primary/40 transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+                  <line x1="19" y1="8" x2="19" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="22" y1="11" x2="16" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                Déposer ma candidature
+              </Link>
             </div>
           </form>
         </div>

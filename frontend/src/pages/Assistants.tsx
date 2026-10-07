@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiAlertTriangle, FiDownload, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiDownload, FiCheckCircle, FiX, FiMail } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 
 const MATIERE_COLORS: Record<string, { bg: string, color: string, label: string }> = {
@@ -37,6 +37,7 @@ interface AssistantData {
   heuresTotal: number;
   heuresMax: number;
   matieres: string[];
+  specialties?: string[];
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -253,6 +254,14 @@ export default function Assistants() {
                     <td className="px-4 py-3.5 align-middle">
                       <div className="text-[13.5px] font-semibold text-text-primary">{a.nom}</div>
                       <div className="text-[11.5px] text-text-muted mt-0.5 flex items-center gap-1"><FiMail /> {a.email}</div>
+                      <div className="flex gap-1 mt-1">
+                        {(a.specialties || []).map((s: any) => (
+                          <span key={s} className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${s === 'INFORMATIQUE' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                            }`}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3.5 align-middle">
                       <div className="text-[13px] text-text-primary">{a.formation || '—'}</div>

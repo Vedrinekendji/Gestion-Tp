@@ -9,14 +9,17 @@ router.use(authMiddleware);
 
 // Helper for pedagogical action logging
 async function logPedagogicalAction(user, action, objet, details) {
-    let uName = user.email;
-    if (user.userId) {
+    let uName = 'Administrateur';
+    if (user?.userId) {
         const u = await prisma.user.findUnique({
             where: { id: user.userId },
             include: { professeur: true, assistant: true },
         });
-        if (u?.professeur) uName = `${u.professeur.prenom} ${u.professeur.nom} (${user.role})`;
-        else if (u?.assistant) uName = `${u.assistant.prenom} ${u.assistant.nom} (Assistant)`;
+        if (u) {
+            if (u.professeur) uName = `${u.professeur.prenom} ${u.professeur.nom} (${user.role || 'Professeur'})`;
+            else if (u.assistant) uName = `${u.assistant.prenom} ${u.assistant.nom} (Assistant)`;
+            else uName = u.email || `Admin (#${u.id})`;
+        }
     }
     await prisma.historiquePeda.create({
         data: {

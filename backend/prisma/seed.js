@@ -4,15 +4,17 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Démarrage du seeding étendu pour RBAC & Nouveaux Profils...');
+  console.log('🌱 Démarrage du seeding avec la nouvelle structure des Rôles & Spécialités...');
 
-  // Nettoyage dans l'ordre (pour éviter les conflits FK)
+  // Nettoyage dans l'ordre (évite conflits FK)
   await prisma.historiquePeda.deleteMany();
   await prisma.historiqueReservation.deleteMany();
+  await prisma.candidatureSpecialty.deleteMany();
   await prisma.candidature.deleteMany();
   await prisma.affectation.deleteMany();
   await prisma.disponibilite.deleteMany();
   await prisma.assistantMatiere.deleteMany();
+  await prisma.assistantSpecialty.deleteMany();
   await prisma.seance.deleteMany();
   await prisma.matiere.deleteMany();
   await prisma.assistant.deleteMany();
@@ -21,31 +23,65 @@ async function main() {
   await prisma.systemConfig.deleteMany();
   await prisma.user.deleteMany();
 
-  console.log('🗑️  Base nettoyée.');
+  console.log('🗑️  Base de données nettoyée avec succès.');
 
   // Config système initiale
   await prisma.systemConfig.create({
     data: { id: 1, blocageCreneauEnAttente: false },
   });
 
-  // 1. ADMINISTRATEUR
-  const hashAdmin = await bcrypt.hash('admin123', 10);
-  const adminUser = await prisma.user.create({
+  const commonPassword = await bcrypt.hash('password123', 10);
+
+  // =========================================================================
+  // 1. CRÉATION DES COMPTES DE TEST OBLIGATOIRES (EXIGENCE REQUIS 27)
+  // =========================================================================
+
+  // TEST 1 : Super Admin (Accès total INFORMATIQUE + ÉLECTRONIQUE)
+  const superAdminUser = await prisma.user.create({
     data: {
-      email: 'admin@gestiontp.dz',
-      password: hashAdmin,
-      role: 'ADMIN',
+      email: 'superadmin@gestiontp.fr',
+      login: 'SUPERADMIN',
+      password: commonPassword,
+      role: 'SUPER_ADMIN',
     },
   });
-  console.log('👑 Admin créé :', adminUser.email);
 
-  // 2. PROFESSEUR (ancien Responsable Pédagogique)
-  const hashResp = await bcrypt.hash('resp123', 10);
-  const respUser = await prisma.user.create({
+  // Compte admin historique pour rétrocompatibilité
+  await prisma.user.create({
     data: {
-      email: 'responsable@gestiontp.dz',
-      login: 'KB26B', // Karim Benali
-      password: hashResp,
+      email: 'admin@gestiontp.dz',
+      login: 'ADMIN',
+      password: commonPassword,
+      role: 'SUPER_ADMIN',
+    },
+  });
+
+  // TEST 2 : Administrateur Informatique (Limité à INFORMATIQUE)
+  const adminInfoUser = await prisma.user.create({
+    data: {
+      email: 'admin.info@gestiontp.fr',
+      login: 'ADMININFO',
+      password: commonPassword,
+      role: 'ADMIN_INFORMATIQUE',
+    },
+  });
+
+  // TEST 3 : Administrateur Électronique (Limité à ÉLECTRONIQUE)
+  const adminElecUser = await prisma.user.create({
+    data: {
+      email: 'admin.elec@gestiontp.fr',
+      login: 'ADMINELEC',
+      password: commonPassword,
+      role: 'ADMIN_ELECTRONIQUE',
+    },
+  });
+
+  // TEST 4 : Professeur Informatique
+  const profInfoUser = await prisma.user.create({
+    data: {
+      email: 'prof.info@gestiontp.fr',
+      login: 'PROFINFO',
+      password: commonPassword,
       role: 'PROFESSEUR',
       professeur: {
         create: {
@@ -53,52 +89,39 @@ async function main() {
           prenom: 'Karim',
           departement: 'Informatique',
           telephone: '0550123456',
+          specialite: 'INFORMATIQUE',
         },
       },
     },
     include: { professeur: true },
   });
-  console.log('🎓 Professeur (ex-responsable) créé :', respUser.email);
 
-  // Professeur régulier
-  const hashProf = await bcrypt.hash('prof123', 10);
-  const profUser = await prisma.user.create({
+  // TEST 5 : Professeur Électronique
+  const profElecUser = await prisma.user.create({
     data: {
-      email: 'prof@gestiontp.dz',
-      password: hashProf,
+      email: 'prof.elec@gestiontp.fr',
+      login: 'PROFELEC',
+      password: commonPassword,
       role: 'PROFESSEUR',
       professeur: {
         create: {
-          nom: 'Dupont',
-          prenom: 'Jean',
-          departement: 'Informatique',
+          nom: 'Mansouri',
+          prenom: 'Salim',
+          departement: 'Électronique',
           telephone: '0550987654',
+          specialite: 'ELECTRONIQUE',
         },
       },
     },
     include: { professeur: true },
   });
-  console.log('👨‍🏫 Professeur créé :', profUser.email);
 
-  // 3. ADMINISTRATEUR SECONDAIRE (ancien Service Administratif)
-  const hashService = await bcrypt.hash('service123', 10);
-  const serviceUser = await prisma.user.create({
+  // TEST 6 : Assistant Informatique
+  const astInfoUser = await prisma.user.create({
     data: {
-      email: 'admin.service@gestiontp.dz',
-      login: 'AD2',
-      password: hashService,
-      role: 'ADMIN',
-    },
-  });
-  console.log('👑 Admin secondaire (ex-service administratif) créé :', serviceUser.email);
-
-  // 4. ASSISTANTS
-  const hashAssistant = await bcrypt.hash('assistant123', 10);
-  const assistantUser1 = await prisma.user.create({
-    data: {
-      email: 'assistant@gestiontp.dz',
-      login: 'P26M', // Paul Martin
-      password: hashAssistant,
+      email: 'ast.info@gestiontp.fr',
+      login: 'ASTINFO',
+      password: commonPassword,
       role: 'ASSISTANT',
       assistant: {
         create: {
@@ -109,278 +132,292 @@ async function main() {
           telephone: '0661223344',
           statut: 'ACTIF',
           heuresMax: 120,
-          inscription: new Date('2026-01-15'),
+          inscription: new Date(),
+          specialties: {
+            create: [{ specialty: 'INFORMATIQUE' }],
+          },
         },
       },
     },
     include: { assistant: true },
   });
 
-  const assistantUser2 = await prisma.user.create({
+  // TEST 7 : Assistant Électronique
+  const astElecUser = await prisma.user.create({
     data: {
-      email: 'yasmine.k@gestiontp.dz',
-      login: 'Y26K', // Yasmine Khadraoui
-      password: hashAssistant,
+      email: 'ast.elec@gestiontp.fr',
+      login: 'ASTELEC',
+      password: commonPassword,
       role: 'ASSISTANT',
       assistant: {
         create: {
           nom: 'Khadraoui',
           prenom: 'Yasmine',
-          formation: 'Intelligence Artificielle',
+          formation: 'Électronique Embarquée',
           niveau: 'M2',
           telephone: '0661556677',
           statut: 'ACTIF',
-          heuresMax: 100,
-          inscription: new Date('2026-02-01'),
+          heuresMax: 120,
+          inscription: new Date(),
+          specialties: {
+            create: [{ specialty: 'ELECTRONIQUE' }],
+          },
         },
       },
     },
     include: { assistant: true },
   });
-  console.log('👨‍🎓 Assistants (avec logins) créés.');
 
-  // 5. MATIÈRES
+  // TEST 8 : Assistant Informatique + Électronique (Multi-Spécialités)
+  const astBothUser = await prisma.user.create({
+    data: {
+      email: 'ast.both@gestiontp.fr',
+      login: 'ASTBOTH',
+      password: commonPassword,
+      role: 'ASSISTANT',
+      assistant: {
+        create: {
+          nom: 'Dupont',
+          prenom: 'Jean',
+          formation: 'Systèmes Mécatroniques & IT',
+          niveau: 'M2',
+          telephone: '0770889900',
+          statut: 'ACTIF',
+          heuresMax: 120,
+          inscription: new Date(),
+          specialties: {
+            create: [
+              { specialty: 'INFORMATIQUE' },
+              { specialty: 'ELECTRONIQUE' },
+            ],
+          },
+        },
+      },
+    },
+    include: { assistant: true },
+  });
+
+  console.log('✅ Les 8 comptes de TEST obligatoires ont été créés.');
+
+  // =========================================================================
+  // 2. CRÉATION DES MATIÈRES PAR SPÉCIALITÉ
+  // =========================================================================
+
   const matAlgo = await prisma.matiere.create({
-    data: { code: 'ALGO', nom: 'Algorithmique & Structures de Données', couleur: '#4361ee' },
-  });
-  const matBdd = await prisma.matiere.create({
-    data: { code: 'BDD', nom: 'Bases de Données Relationnelles', couleur: '#10b981' },
-  });
-  const matPoo = await prisma.matiere.create({
-    data: { code: 'POO', nom: 'Programmation Orientée Objet Java', couleur: '#f59e0b' },
-  });
-  const matWeb = await prisma.matiere.create({
-    data: { code: 'WEB', nom: 'Développement Web Fullstack', couleur: '#8b5cf6' },
+    data: {
+      code: 'ALGO',
+      nom: 'Algorithmique & Structures de Données',
+      couleur: '#4361ee',
+      specialite: 'INFORMATIQUE',
+    },
   });
 
-  // Jointures Assistant <-> Matières
+  const matBdd = await prisma.matiere.create({
+    data: {
+      code: 'BDD',
+      nom: 'Bases de Données SQL',
+      couleur: '#10b981',
+      specialite: 'INFORMATIQUE',
+    },
+  });
+
+  const matElecNum = await prisma.matiere.create({
+    data: {
+      code: 'ELEC_NUM',
+      nom: 'Électronique Numérique & Circuits Logiques',
+      couleur: '#f59e0b',
+      specialite: 'ELECTRONIQUE',
+    },
+  });
+
+  const matMicroProc = await prisma.matiere.create({
+    data: {
+      code: 'MICRO_PROC',
+      nom: 'Microprocesseurs, Microcontrôleurs & IoT',
+      couleur: '#ef4444',
+      specialite: 'ELECTRONIQUE',
+    },
+  });
+
+  // Associer les matières aux assistants
   await prisma.assistantMatiere.createMany({
     data: [
-      { assistantId: assistantUser1.assistant.id, matiereId: matAlgo.id },
-      { assistantId: assistantUser1.assistant.id, matiereId: matBdd.id },
-      { assistantId: assistantUser2.assistant.id, matiereId: matPoo.id },
-      { assistantId: assistantUser2.assistant.id, matiereId: matWeb.id },
+      { assistantId: astInfoUser.assistant.id, matiereId: matAlgo.id },
+      { assistantId: astInfoUser.assistant.id, matiereId: matBdd.id },
+      { assistantId: astElecUser.assistant.id, matiereId: matElecNum.id },
+      { assistantId: astElecUser.assistant.id, matiereId: matMicroProc.id },
+      { assistantId: astBothUser.assistant.id, matiereId: matAlgo.id },
+      { assistantId: astBothUser.assistant.id, matiereId: matMicroProc.id },
     ],
   });
 
-  // 6. CANDIDATURES DEMO
-  await prisma.candidature.createMany({
-    data: [
-      {
-        nom: 'Zerrouki',
-        prenom: 'Amine',
-        email: 'amine.zerrouki@gmail.com',
-        telephone: '0770112233',
-        formation: 'Informatique Décisionnelle',
-        niveau: 'M1',
-        disponibilites: 'Lundi (08:00 - 12:00), Mercredi (13:00 - 17:00)',
-        cvUrl: '/uploads/cv_amine_zerrouki.pdf',
-        statut: 'EN_ATTENTE',
-        commentaire: 'Bon profil académique, excellent en Python et SQL.',
+  // =========================================================================
+  // 3. CRÉATION DES CANDIDATURES DE DÉMONSTRATION (AVEC SPÉCIALITÉS)
+  // =========================================================================
+
+  const cand1 = await prisma.candidature.create({
+    data: {
+      nom: 'Zerrouki',
+      prenom: 'Amine',
+      email: 'amine.zerrouki@gmail.com',
+      telephone: '0770112233',
+      formation: 'Informatique Décisionnelle',
+      niveau: 'M1',
+      disponibilites: 'Lundi et Mercredi matin',
+      motivation: 'Très motivé par l encadrement des séances de TP en informatique et développement.',
+      statut: 'EN_ATTENTE',
+      specialties: {
+        create: [{ specialty: 'INFORMATIQUE' }],
       },
-      {
-        nom: 'Belkacem',
-        prenom: 'Sarah',
-        email: 'sarah.belkacem@gmail.com',
-        telephone: '0770445566',
-        formation: 'Cybersécurité & Réseaux',
-        niveau: 'M2',
-        disponibilites: 'Mardi (09:00 - 15:00), Jeudi (10:00 - 16:00)',
-        cvUrl: '/uploads/cv_sarah_belkacem.pdf',
-        statut: 'EN_ATTENTE',
-        commentaire: 'Disponible immédiatement pour encadrer TP de Réseaux.',
-      },
-      {
-        nom: 'Martin',
-        prenom: 'Paul',
-        email: 'assistant@gestiontp.dz',
-        telephone: '0661223344',
-        formation: 'Génie Logiciel',
-        niveau: 'M1',
-        disponibilites: 'Tous les jours',
-        statut: 'ACCEPTEE',
-        commentaire: 'Candidature validée par Prof. Karim Benali.',
-        assistantId: assistantUser1.assistant.id,
-      },
-      {
-        nom: 'Bouzid',
-        prenom: 'Omar',
-        email: 'omar.bouzid@gmail.com',
-        telephone: '0555998877',
-        formation: 'Licence 2 Informatique',
-        niveau: 'L2',
-        disponibilites: 'Vendredi après-midi',
-        statut: 'REFUSEE',
-        motifRefus: 'Niveau d\'études insuffisant pour encadrer des TP de Master.',
-        commentaire: 'A réinviter l\'année prochaine en M1.',
-      },
-    ],
+    },
   });
-  console.log('📋 Candidatures créées.');
 
-  // 7. SÉANCES & AFFECTATIONS
-  const dateToday = new Date();
-  const dateDemain = new Date(Date.now() + 86400000);
-  const dateHier = new Date(Date.now() - 86400000 * 2);
-  const dateDernierMois = new Date(Date.now() - 86400000 * 15);
+  const cand2 = await prisma.candidature.create({
+    data: {
+      nom: 'Belkacem',
+      prenom: 'Sarah',
+      email: 'sarah.belkacem@gmail.com',
+      telephone: '0770445566',
+      formation: 'Genie Électronique & Systèmes Embarqués',
+      niveau: 'M2',
+      disponibilites: 'Mardi et Jeudi',
+      motivation: 'Passionnée par la conception des cartes électroniques et microcontrôleurs.',
+      statut: 'EN_ATTENTE',
+      specialties: {
+        create: [{ specialty: 'ELECTRONIQUE' }],
+      },
+    },
+  });
 
-  const seance1 = await prisma.seance.create({
+  const cand3 = await prisma.candidature.create({
+    data: {
+      nom: 'Brahimi',
+      prenom: 'Khaled',
+      email: 'khaled.brahimi@gmail.com',
+      telephone: '0555334455',
+      formation: 'Informatique & Électronique de puissance',
+      niveau: 'M2',
+      disponibilites: 'Plein temps',
+      motivation: 'Double compétence en programmation bas niveau et assemblage électronique.',
+      statut: 'EN_ATTENTE',
+      specialties: {
+        create: [
+          { specialty: 'INFORMATIQUE' },
+          { specialty: 'ELECTRONIQUE' },
+        ],
+      },
+    },
+  });
+
+  // =========================================================================
+  // 4. CRÉATION DES SÉANCES TP (INFORMATIQUE ET ÉLECTRONIQUE)
+  // =========================================================================
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const afterTomorrow = new Date();
+  afterTomorrow.setDate(afterTomorrow.getDate() + 2);
+
+  // Séance Informatique 1
+  const seanceInfo1 = await prisma.seance.create({
     data: {
       matiereId: matAlgo.id,
-      professeurId: respUser.professeur.id,
-      groupe: 'Groupe A1',
-      date: dateDemain,
+      professeurId: profInfoUser.professeur.id,
+      groupe: 'Groupe INFO-A1',
+      date: tomorrow,
       heureDebut: '08:30',
       heureFin: '10:30',
-      salle: 'Labo 102',
+      salle: 'Labo Info 101',
       type: 'TP',
       niveau: 'L2 Informatique',
       statut: 'PLANIFIEE',
       nombreAssistantsRequis: 2,
+      specialite: 'INFORMATIQUE',
     },
   });
 
-  const seance2 = await prisma.seance.create({
+  // Séance Informatique 2
+  const seanceInfo2 = await prisma.seance.create({
     data: {
       matiereId: matBdd.id,
-      professeurId: respUser.professeur.id,
-      groupe: 'Groupe B2',
-      date: dateToday,
-      heureDebut: '11:00',
-      heureFin: '13:00',
-      salle: 'Labo 204',
-      type: 'TP',
-      niveau: 'L3 Informatique',
-      statut: 'EN_COURS',
-      nombreAssistantsRequis: 1,
-    },
-  });
-
-  const seance3 = await prisma.seance.create({
-    data: {
-      matiereId: matPoo.id,
-      professeurId: profUser.professeur.id,
-      groupe: 'Groupe C1',
-      date: dateHier,
+      professeurId: profInfoUser.professeur.id,
+      groupe: 'Groupe INFO-B2',
+      date: afterTomorrow,
       heureDebut: '14:00',
       heureFin: '16:00',
-      salle: 'Labo 105',
+      salle: 'Labo Info 102',
       type: 'TP',
-      niveau: 'M1 Génie Logiciel',
-      statut: 'TERMINEE',
+      niveau: 'L3 Informatique',
+      statut: 'PLANIFIEE',
       nombreAssistantsRequis: 1,
+      specialite: 'INFORMATIQUE',
     },
   });
 
-  const seance4 = await prisma.seance.create({
+  // Séance Électronique 1
+  const seanceElec1 = await prisma.seance.create({
     data: {
-      matiereId: matWeb.id,
-      professeurId: respUser.professeur.id,
-      groupe: 'Groupe D3',
-      date: dateDernierMois,
-      heureDebut: '09:00',
-      heureFin: '12:00',
-      salle: 'Labo Web',
+      matiereId: matElecNum.id,
+      professeurId: profElecUser.professeur.id,
+      groupe: 'Groupe ELEC-E1',
+      date: tomorrow,
+      heureDebut: '14:00',
+      heureFin: '16:00',
+      salle: 'Labo Électronique 201',
       type: 'TP',
-      niveau: 'M2 Web & Cloud',
-      statut: 'TERMINEE',
+      niveau: 'L2 Électronique',
+      statut: 'PLANIFIEE',
       nombreAssistantsRequis: 2,
+      specialite: 'ELECTRONIQUE',
     },
   });
 
-  // Affectations (Créneaux & Validation heures)
-  await prisma.affectation.create({
+  // Séance Électronique 2
+  const seanceElec2 = await prisma.seance.create({
     data: {
-      seanceId: seance1.id,
-      assistantId: assistantUser1.assistant.id,
-      statut: 'EN_ATTENTE', // En attente de confirmation du créneau par le responsable
-      heuresCount: 2.0,
-      statutHeures: 'EN_ATTENTE',
-      commentaire: 'Créneau demandé par l\'assistant Paul Martin',
+      matiereId: matMicroProc.id,
+      professeurId: profElecUser.professeur.id,
+      groupe: 'Groupe ELEC-E2',
+      date: afterTomorrow,
+      heureDebut: '10:00',
+      heureFin: '12:00',
+      salle: 'Labo Électronique 202',
+      type: 'TP',
+      niveau: 'M1 Microélectronique',
+      statut: 'PLANIFIEE',
+      nombreAssistantsRequis: 1,
+      specialite: 'ELECTRONIQUE',
     },
   });
 
+  // Une réservation existante pour démonstration
   await prisma.affectation.create({
     data: {
-      seanceId: seance2.id,
-      assistantId: assistantUser2.assistant.id,
-      statut: 'VALIDEE', // Créneau confirmé
-      heuresCount: 2.0,
-      statutHeures: 'EN_ATTENTE', // Heures à valider après TP
-      commentaire: 'Créneau confirmé pour Yasmine Khadraoui',
-    },
-  });
-
-  await prisma.affectation.create({
-    data: {
-      seanceId: seance3.id,
-      assistantId: assistantUser1.assistant.id,
+      seanceId: seanceInfo1.id,
+      assistantId: astInfoUser.assistant.id,
       statut: 'VALIDEE',
       heuresCount: 2.0,
-      statutHeures: 'EN_ATTENTE', // Soumis pour validation des heures
-      commentaireHeures: 'TP réalisé avec succès, aide sur TP Java POO.',
+      statutPresence: 'PRESENCE_A_VALIDER',
     },
   });
 
-  await prisma.affectation.create({
-    data: {
-      seanceId: seance4.id,
-      assistantId: assistantUser2.assistant.id,
-      statut: 'VALIDEE',
-      heuresCount: 3.0,
-      statutHeures: 'VALIDEE', // Heures validées officiellement!
-      commentaireHeures: 'Validation effectuée par Karim Benali.',
-      dateValidationHeures: new Date(),
-    },
-  });
-
-  // 8. HISTORIQUE PÉDAGOGIQUE
-  await prisma.historiquePeda.createMany({
-    data: [
-      {
-        utilisateur: 'Karim Benali (Responsable)',
-        action: 'CANDIDATURE_ACCEPTEE',
-        objet: 'Candidature #3 - Paul Martin',
-        details: 'Candidature acceptée et compte assistant activé.',
-        date: new Date('2026-02-10T10:30:00Z'),
-      },
-      {
-        utilisateur: 'Karim Benali (Responsable)',
-        action: 'SEANCE_CREEE',
-        objet: 'Séance ALGO - Groupe A1',
-        details: 'Séance programmée pour le labo 102.',
-        date: new Date('2026-02-11T09:00:00Z'),
-      },
-      {
-        utilisateur: 'Paul Martin (Assistant)',
-        action: 'CRENEAU_DEMANDE',
-        objet: 'Séance ALGO - Groupe A1',
-        details: 'Demande de réservation de créneau TP.',
-        date: new Date('2026-02-12T14:15:00Z'),
-      },
-      {
-        utilisateur: 'Karim Benali (Responsable)',
-        action: 'HEURES_VALIDEES',
-        objet: 'TP WEB (Groupe D3) - Yasmine Khadraoui',
-        details: '3.0 heures de TP validées et enregistrées.',
-        date: new Date('2026-02-15T16:00:00Z'),
-      },
-    ],
-  });
-
-  console.log('🎉 Seeding étendu terminé avec succès !');
-  console.log('');
-  console.log('📝 Comptes de démonstration :');
-  console.log('   Admin             : admin@gestiontp.dz / admin123');
-  console.log('   Resp. Pédagogique : responsable@gestiontp.dz / resp123');
-  console.log('   Professeur        : prof@gestiontp.dz / prof123');
-  console.log('   Service Admin     : admin.service@gestiontp.dz / service123');
-  console.log('   Assistant         : assistant@gestiontp.dz / assistant123');
-  console.log('');
+  console.log('🎉 Seeding réussi ! Tous les comptes, spécialités et séances ont été générés.');
+  console.log('----------------------------------------------------');
+  console.log('🔑 RECAPITULATIF DES COMPTES DE TEST (Mot de passe: password123)');
+  console.log('1. SUPER ADMIN            : superadmin@gestiontp.fr / login: SUPERADMIN');
+  console.log('2. ADMIN INFORMATIQUE     : admin.info@gestiontp.fr   / login: ADMININFO');
+  console.log('3. ADMIN ÉLECTRONIQUE     : admin.elec@gestiontp.fr   / login: ADMINELEC');
+  console.log('4. PROFESSEUR INFO        : prof.info@gestiontp.fr    / login: PROFINFO');
+  console.log('5. PROFESSEUR ELEC        : prof.elec@gestiontp.fr    / login: PROFELEC');
+  console.log('6. ASSISTANT INFO         : ast.info@gestiontp.fr     / login: ASTINFO');
+  console.log('7. ASSISTANT ELEC         : ast.elec@gestiontp.fr     / login: ASTELEC');
+  console.log('8. ASSISTANT INFO + ELEC  : ast.both@gestiontp.fr     / login: ASTBOTH');
+  console.log('----------------------------------------------------');
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error('❌ Erreur lors du seeding :', e);
     process.exit(1);
   })

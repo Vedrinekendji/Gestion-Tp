@@ -11,7 +11,20 @@ router.use(authMiddleware);
 // =====================
 router.get('/', async (req, res) => {
   try {
+    const role = req.user?.role?.toUpperCase();
+    const { specialty } = req.query;
+
+    const where = {};
+    if (role === 'ADMIN_INFORMATIQUE') {
+      where.specialite = 'INFORMATIQUE';
+    } else if (role === 'ADMIN_ELECTRONIQUE') {
+      where.specialite = 'ELECTRONIQUE';
+    } else if (specialty && specialty !== 'TOUTES') {
+      where.specialite = specialty;
+    }
+
     const matieres = await prisma.matiere.findMany({
+      where,
       orderBy: { nom: 'asc' },
       include: {
         _count: {
@@ -29,6 +42,7 @@ router.get('/', async (req, res) => {
       nom: m.nom,
       description: m.description,
       couleur: m.couleur,
+      specialite: m.specialite,
       nbAssistants: m._count.assistants,
       nbSeances: m._count.seances,
     }));
@@ -45,7 +59,7 @@ router.get('/', async (req, res) => {
 // =====================
 router.post('/', requireRole('ADMIN'), async (req, res) => {
   try {
-    const { code, nom, description, couleur } = req.body;
+    const { code, nom, description, couleur, specialite } = req.body;
 
     if (!code || !nom) {
       return res.status(400).json({ error: 'Le code et le nom de la matière sont requis.' });
@@ -62,6 +76,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
         nom,
         description: description || null,
         couleur: couleur || '#4361ee',
+        specialite: specialite || 'INFORMATIQUE',
       },
     });
 

@@ -24,9 +24,30 @@ export const authMiddleware = (req, res, next) => {
 // =====================
 export const requireRole = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !req.user.role) {
       return res.status(403).json({ error: 'Accès non autorisé.' });
     }
+
+    const userRole = req.user.role.toUpperCase();
+    const normalizedAllowed = roles.flatMap(r => {
+      const u = r.toUpperCase();
+      if (u === 'ADMIN') return ['SUPER_ADMIN', 'ADMIN_INFORMATIQUE', 'ADMIN_ELECTRONIQUE', 'ADMIN'];
+      return [u];
+    });
+
+    if (!normalizedAllowed.includes(userRole)) {
+      return res.status(403).json({ error: 'Accès non autorisé pour votre rôle.' });
+    }
+
     next();
   };
 };
+
+// Helper function to check if user has access to a specific specialty
+export const isSpecialtyAllowedForAdmin = (userRole, specialty) => {
+  if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') return true;
+  if (userRole === 'ADMIN_INFORMATIQUE' && specialty === 'INFORMATIQUE') return true;
+  if (userRole === 'ADMIN_ELECTRONIQUE' && specialty === 'ELECTRONIQUE') return true;
+  return false;
+};
+
